@@ -1,54 +1,93 @@
-# About
+# Arch notes
 
-My collection of Arch packages since I'm constantly reinstalling this operating system.
+Personal Arch Linux notes so I can quickly redo a sane setup after reinstalls. Focus is on `yay` and day‑to‑day package management.
 
 ## Useful links
 
-- Arch Linux: https://archlinux.org/
-- ArchWiki pacman tips & tricks: https://wiki.archlinux.org/title/Pacman/Tips_and_tricks
-- Arch User Repository (AUR): https://aur.archlinux.org/
-- EndeavourOS (eos): https://endeavouros.com/
+- [Arch Linux](https://archlinux.org/)
+- [Pacman tips & tricks](https://wiki.archlinux.org/title/Pacman/Tips_and_tricks)
+- [Arch User Repository (AUR)](https://aur.archlinux.org/)
+- [EndeavourOS](https://endeavouros.com/)
 
-## Pacman tips & tricks
+## System updates
 
-- List explicitly installed packages: `pacman -Qe`
-- List foreign (AUR/manual) packages: `pacman -Qm`
-- List orphaned dependencies (removal candidates): `pacman -Qtdq`
-- Show files installed by a package: `pacman -Ql <package>`
+- Update everything (repos + AUR): `yay -Syu`
+- Include `--devel` packages: `yay -Syu --devel --timeupdate`
+
+## Searching and inspecting packages (yay)
+
+- Search repos + AUR (quick): `yay <pattern>`
+- Search repos only: `yay -Ss <pattern>`
+- Search installed packages: `yay -Qs <pattern>`
+- Show package details: `yay -Si <package>`
+- Show files installed by a package: `yay -Ql <package>`
+
+## Installed, AUR, and orphaned packages
+
+- Explicitly installed (not pulled as deps): `yay -Qe`
+- AUR / foreign packages: `yay -Qm`
+- Orphaned dependencies (removal candidates): `yay -Qdt`
+
+## Installing, removing, cleaning (yay)
+
+- Install from repos or AUR: `yay -S <package>`
+- Remove a package + unused deps: `yay -Rns <package>`
+- See what depends on a package before removing: `pactree -r <package>`
+- Remove unneeded dependencies: `yay -Yc`
+- Clean old package cache (interactive): `yay -Sc`
+- Clean all package caches (be careful): `yay -Scc`
+
+## Mirrors and speed
+
+- Install mirror helper (example): `yay -S rate-mirrors-bin`
+- Refresh Arch mirrors (adjust country/opts as needed):
+
+```bash
+sudo rate-mirrors --allow-root arch | sudo tee /etc/pacman.d/mirrorlist
+```
+
+For more options see:
+
+- [rate-mirrors](https://github.com/westandskif/rate-mirrors)
+- [reflector](https://wiki.archlinux.org/title/Reflector)
+
+## Extra pacman tricks
+
+These are still handy even if you mostly use `yay`:
+
 - Find which package owns a file: `pacman -Qo /path/to/file`
-- Search sync databases for a file (update with `pacman -Fy`): `pacman -F <filename>`
-- Check installed files for a package: `pacman -Qk <package>` (or `pacman -Qkk <package>` for a deeper check)
+- Search sync database for a file (after `sudo pacman -Fy`): `pacman -F <filename>`
+- Verify installed files for a package: `pacman -Qk <package>` or `pacman -Qkk <package>`
 - Download packages to cache without installing: `pacman -Sw <package>`
-- Reinstall all sync packages: `pacman -Qnq | pacman -S -`
+- Reinstall all sync packages:
+
+```bash
+pacman -Qnq | sudo pacman -S -
+```
+
 - Clean old package cache with `paccache` (from `pacman-contrib`): `sudo paccache -r`
-
-## Common `yay`
-
-- Update AUR and repo packages: `yay -Syu`
-- Install from AUR or repos: `yay -S <package>`
-- Search AUR and repos: `yay <pattern>`
-- Remove a package (with deps): `yay -Rns <package>`
-- List explicitly installed AUR packages: `yay -Qm`
 
 ## Remote desktops
 
-- Moonlight (client for NVIDIA GameStream-like streaming): `sudo pacman -S moonlight-qt`
-  - Use this on the machine receiving the stream (your laptop/desktop).
-- Sunshine (host/game streaming server): `yay -S sunshine`
-  - Run this on the gaming host; configure games/apps and firewall, then pair Moonlight to Sunshine.
+- Moonlight (client for NVIDIA GameStream‑like streaming): `sudo pacman -S moonlight-qt`  
+  Use this on the machine receiving the stream (your laptop/desktop).
+- Sunshine (game streaming host): `yay -S sunshine`  
+  Run this on the gaming host, configure games/apps and firewall, then pair Moonlight to Sunshine.
 
 ## Graphics
 
-- NVIDIA installer: `sudo pacman -S nvidia-inst`
-  - After install: run the guided installer with `sudo nvidia-inst` and follow the prompts.
-- Hybrid graphics switcher: `sudo pacman -S switcheroo`
-  - After install: enable and start the service with `sudo systemctl enable --now switcheroo-control.service`.
+- NVIDIA installer: `sudo pacman -S nvidia-inst`  
+  After install, run the guided installer: `sudo nvidia-inst`.
+- Hybrid graphics switcher: `sudo pacman -S switcheroo`  
+  After install, enable and start:
 
-## Editors
+```bash
+sudo systemctl enable --now switcheroo-control.service
+```
 
-### VSCodium
+## Editors – VSCodium
 
-An awesome fork of VSCode without all the Miscrosoft rubbish.
+VSCodium is a build of VS Code without the Microsoft telemetry, branding, or license issues.
 
 ```bash
 # Precompiled
@@ -58,7 +97,7 @@ yay -S --needed vscodium-bin
 yay -S --needed vscodium
 ```
 
-Here is a script that will batch install some of my faviourite commands.
+Batch‑install some favourite extensions:
 
 ```bash
 # --- AI / agents ---
@@ -104,5 +143,4 @@ for e in \
 do
   codium --install-extension "$e"
 done
-
 ```
