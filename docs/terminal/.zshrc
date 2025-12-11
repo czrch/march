@@ -34,10 +34,7 @@ setopt EXTENDED_GLOB
 setopt NO_BEEP
 setopt PROMPT_SUBST
 
-# Recommended: allow '#' comments when pasting scripts
 setopt INTERACTIVE_COMMENTS
-# If you really want to disable interactive comments:
-# unsetopt INTERACTIVE_COMMENTS
 
 # History
 export HISTFILE="$XDG_DATA_HOME/zsh/history"
@@ -55,34 +52,26 @@ setopt EXTENDED_HISTORY
 # -----------------------------------------------------------------------------
 # 2) Completion (fast + cached)
 # -----------------------------------------------------------------------------
-# System-wide completions + zsh-completions
 fpath=(/usr/share/zsh/site-functions $fpath)
 
 autoload -Uz compinit
-# Use a per-version dump file in cache (faster startup, fewer permission issues)
 _compdump="$XDG_CACHE_HOME/zsh/zcompdump-${ZSH_VERSION}"
-# If you ever hit stale completion issues: rm -f "$_compdump"*
 compinit -d "$_compdump" -C
 
-# Helpful completion UX
-zmodload zsh/complist 2>/dev/null
+zmodload zsh/complist
 zstyle ':completion:*' menu select
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/zcompcache"
 zstyle ':completion:*' completer _extensions _complete _approximate
-zstyle ':completion:*:descriptions' format '%F{yellow}%d%f'
-zstyle ':completion:*:messages' format '%F{green}%d%f'
-zstyle ':completion:*:warnings' format '%F{red}%d%f'
-zstyle ':completion:*' matcher-list \
-  'm:{a-zA-Z}={A-Za-z}' \
-  'r:|[._-]=* r:|=*' \
-  'l:|=* r:|=*'
+zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+zstyle ':completion:*:messages' format '%F{green}-- %d --%f'
+zstyle ':completion:*:warnings' format '%F{red}-- no matches --%f'
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
 
-# Enable bash completion compatibility when needed
 autoload -Uz bashcompinit && bashcompinit
 
 # -----------------------------------------------------------------------------
-# 3) Keybinds (sane defaults + history substring search)
+# 3) Keybinds (sane defaults)
 # -----------------------------------------------------------------------------
 bindkey -e
 
@@ -95,8 +84,13 @@ bindkey '^W' backward-kill-word
 bindkey '^[b' backward-word
 bindkey '^[f' forward-word
 
-bindkey '^[[A' history-substring-search-up   2>/dev/null
-bindkey '^[[B' history-substring-search-down 2>/dev/null
+# History substring search bindings (set after plugin loads)
+_bind_history_search() {
+  bindkey '^[[A' history-substring-search-up
+  bindkey '^[[B' history-substring-search-down
+  bindkey '^P' history-substring-search-up
+  bindkey '^N' history-substring-search-down
+}
 
 # -----------------------------------------------------------------------------
 # 4) FZF integration (guarded)
@@ -111,44 +105,63 @@ if command -v fd >/dev/null; then
 fi
 
 # Enhanced FZF options
-export FZF_DEFAULT_OPTS="
-  --height 40% --layout=reverse --border
-  --preview 'bat --color=always --style=numbers {}' 2>/dev/null
-  --preview-window=right:60%:wrap
-  --bind 'ctrl-/:toggle-preview'
-  --bind 'ctrl-y:execute-silent(echo {} | xclip -selection clipboard)+abort'
-"
+export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border \
+  --preview 'bat --color=always --style=numbers {} 2>/dev/null || tree -C {}' \
+  --preview-window=right:60%:wrap \
+  --bind 'ctrl-/:toggle-preview' \
+  --bind 'ctrl-y:execute-silent(echo {} | xclip -selection clipboard)+abort'"
 
-export FZF_CTRL_T_OPTS="
-  --preview 'bat --color=always --line-range :500 {}' 2>/dev/null
-  --bind 'ctrl-/:change-preview-window(down|hidden|)'
-"
+export FZF_CTRL_T_OPTS="--preview 'bat --color=always --line-range :500 {} 2>/dev/null || tree -C {}' \
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'"
 
-export FZF_ALT_C_OPTS="
-  --preview 'eza --tree --level=2 --color=always {} | head -200'
-"
+export FZF_ALT_C_OPTS="--preview 'eza --tree --level=2 --color=always {} 2>/dev/null || tree -C {} | head -200'"
+
+# fzf-tab configuration
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'eza -1 --color=always $realpath'
+zstyle ':completion:*:git-checkout:*' sort false
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+zstyle ':fzf-tab:*' switch-group '<' '>'
 
 # -----------------------------------------------------------------------------
-# 5) Plugins (Pacman/AUR paths) — load order matters
+# 5) Zinit Plugin Manager + Plugins
 # -----------------------------------------------------------------------------
-# Autosuggestions
-[[ -r /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] \
-  && source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+ZINIT_HOME="${XDG_DATA_HOME}/zinit/zinit.git"
 
-# History substring search (nice with ↑/↓ bindings above)
-[[ -r /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh ]] \
-  && source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
+# Install zinit if not present
+if [[ ! -d "$ZINIT_HOME" ]]; then
+  mkdir -p "$(dirname "$ZINIT_HOME")"
+  git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+fi
 
-# Autopair (optional)
-[[ -r /usr/share/zsh/plugins/zsh-autopair/autopair.zsh ]] \
-  && source /usr/share/zsh/plugins/zsh-autopair/autopair.zsh
+source "${ZINIT_HOME}/zinit.zsh"
 
-# Fast syntax highlighting (preferred) OR fallback to classic syntax-highlighting
-if [[ -r /usr/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh ]]; then
-  source /usr/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
-elif [[ -r /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
-  # Must be last among “visual” plugins
-  source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+# Turbo mode: wait'0a/b/c' loads after prompt (faster startup)
+zinit wait lucid light-mode for \
+  atload"_zsh_autosuggest_start" \
+    zsh-users/zsh-autosuggestions \
+  blockf atpull'zinit creinstall -q .' \
+    zsh-users/zsh-completions \
+  atload"_bind_history_search" \
+    zsh-users/zsh-history-substring-search \
+    hlissner/zsh-autopair \
+    Aloxaf/fzf-tab \
+  atinit"zicompinit; zicdreplay" \
+    zdharma-continuum/fast-syntax-highlighting
+
+# Useful tools & OMZ plugins
+zinit wait lucid for \
+    wfxr/forgit \
+    MichaelAquilina/zsh-you-should-use \
+  nocompile \
+    OMZP::sudo \
+    OMZP::colored-man-pages
+
+# Docker completion (if needed)
+if command -v docker >/dev/null; then
+  zinit ice lucid wait'0a' as'completion'
+  zinit snippet https://raw.githubusercontent.com/docker/cli/master/contrib/completion/zsh/_docker
 fi
 
 # -----------------------------------------------------------------------------
@@ -178,16 +191,18 @@ export PNPM_HOME="$HOME/.local/share/pnpm"
 path=("$PNPM_HOME" $path)
 
 # Lazy NVM: only load when you actually run node/npm/npx/nvm
-_nvm_loaded=0
-_nvm_load() {
-  (( _nvm_loaded )) && return 0
-  [[ -r /usr/share/nvm/init-nvm.sh ]] && source /usr/share/nvm/init-nvm.sh
-  _nvm_loaded=1
-}
-nvm()  { _nvm_load; command nvm  "$@"; }
-node() { _nvm_load; command node "$@"; }
-npm()  { _nvm_load; command npm  "$@"; }
-npx()  { _nvm_load; command npx  "$@"; }
+if [[ -r /usr/share/nvm/init-nvm.sh ]]; then
+  _nvm_loaded=0
+  _nvm_load() {
+    (( _nvm_loaded )) && return 0
+    source /usr/share/nvm/init-nvm.sh
+    _nvm_loaded=1
+  }
+  nvm()  { _nvm_load; command nvm  "$@"; }
+  node() { _nvm_load; command node "$@"; }
+  npm()  { _nvm_load; command npm  "$@"; }
+  npx()  { _nvm_load; command npx  "$@"; }
+fi
 
 # -----------------------------------------------------------------------------
 # 8) Quality-of-life aliases (optional, keep minimal)
@@ -214,15 +229,7 @@ alias zz='z -'
 # -----------------------------------------------------------------------------
 # 9) Smart completions
 # -----------------------------------------------------------------------------
-# GitHub CLI
 command -v gh >/dev/null && eval "$(gh completion -s zsh)"
-
-# Docker (if not in site-functions)
-if command -v docker >/dev/null && [[ ! -r /usr/share/zsh/site-functions/_docker ]]; then
-  mkdir -p "$XDG_DATA_HOME/zsh"
-  docker completion zsh > "$XDG_DATA_HOME/zsh/_docker" 2>/dev/null
-  fpath=("$XDG_DATA_HOME/zsh" $fpath)
-fi
 
 # -----------------------------------------------------------------------------
 # 10) Useful functions
@@ -263,6 +270,43 @@ gshow() {
   git log --oneline --color=always | fzf --ansi --preview 'git show --color=always {1}' | awk '{print $1}' | xargs -r git show
 }
 
+# Fuzzy kill process
+fkill() {
+  local pid
+  pid=$(ps -ef | sed 1d | fzf -m | awk '{print $2}')
+  if [ "x$pid" != "x" ]; then
+    echo $pid | xargs kill -${1:-9}
+  fi
+}
+
+# Fuzzy file search and edit
+fe() {
+  local file
+  file=$(fd --type f --hidden --follow --exclude .git | fzf --preview 'bat --color=always {}')
+  [[ -n "$file" ]] && ${EDITOR:-vim} "$file"
+}
+
+# Update everything
+update-all() {
+  echo "🔄 Updating system packages..."
+  sudo pacman -Syu --noconfirm
+  
+  echo "\n🔄 Updating Zinit plugins..."
+  zinit self-update && zinit update --parallel
+  
+  command -v cargo >/dev/null && {
+    echo "\n🔄 Updating Rust tools..."
+    cargo install-update -a 2>/dev/null || echo "💡 Install cargo-update: cargo install cargo-update"
+  }
+  
+  command -v pnpm >/dev/null && {
+    echo "\n🔄 Updating global npm packages..."
+    pnpm update -g
+  }
+  
+  echo "\n✅ All updates complete!"
+}
+
 # Auto-activate Python venvs on directory change
 autoload -U add-zsh-hook
 _venv_auto_activate() {
@@ -279,4 +323,3 @@ add-zsh-hook chpwd _venv_auto_activate
 # -----------------------------------------------------------------------------
 [[ -r /usr/share/doc/pkgfile/command-not-found.zsh ]] \
   && source /usr/share/doc/pkgfile/command-not-found.zsh
-
