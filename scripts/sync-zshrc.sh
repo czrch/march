@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Script to sync the user's .zshrc to the current directory
+# Script to sync the user's .zshrc to docs/terminal
 
 SOURCE="$HOME/.zshrc"
-TARGET="$(pwd)/.zshrc"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET="$SCRIPT_DIR/../docs/terminal/.zshrc"
 
 if [ ! -f "$SOURCE" ]; then
     echo "Error: Source file $SOURCE does not exist"
@@ -21,4 +22,4 @@ if [ -f "$TARGET" ]; then
 fi
 
 cp "$SOURCE" "$TARGET"
-echo "Successfully synced .zshrc to $(pwd)/.zshrc"
+echo "Successfully synced .zshrc to $TARGET"

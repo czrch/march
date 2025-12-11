@@ -7,15 +7,15 @@
 ## ✨ What You Get
 
 ```
-🎯 Smart completions        📚 200K command history
-🔍 Fuzzy finding (FZF)      ⚡ Instant directory jumps  
-🎨 Syntax highlighting      🐟 Fish-like suggestions
-🌟 Beautiful prompt         🐍 Auto Python venv
+Smart completions        200K command history
+Fuzzy finding (FZF)      Instant directory jumps  
+Syntax highlighting      Fish-like suggestions
+Beautiful prompt         Auto Python venv
 ```
 
 <br>
 
-## 📦 Quick Install
+## Quick Install
 
 ```bash
 # Arch Linux (one-liner)
@@ -32,16 +32,16 @@ sudo pacman -S zsh eza bat ripgrep fd fzf starship zoxide \
 
 | Command | What it does |
 |---------|--------------|
-| `Ctrl+R` | 🔍 Search history |
-| `Ctrl+T` | 📁 Find files |
-| `Alt+C` | 📂 Jump to folder |
-| `z <path>` | 🎯 Smart cd |
-| `gco` | 🌿 Fuzzy git branches |
-| `extract file.zip` | 📦 Unzip anything |
+| `Ctrl+R` | Search history |
+| `Ctrl+T` | Find files |
+| `Alt+C` | Jump to folder |
+| `z <path>` | Smart cd |
+| `gco` | Fuzzy git branches |
+| `extract file.zip` | Unzip anything |
 
 <br>
 
-## 🎨 Cool Aliases
+## Cool Aliases
 
 ```bash
 ls      # → eza with icons
@@ -53,7 +53,7 @@ grep    # → ripgrep (faster)
 
 <br>
 
-## 🔧 Must-Have Tools
+## Must-Have Tools
 
 | Tool | Purpose |
 |------|---------|
@@ -66,17 +66,17 @@ grep    # → ripgrep (faster)
 
 <br>
 
-## 🎁 Bonus Features
+## Bonus Features
 
-- ✅ Auto-complete with `Tab`
-- ✅ Case-insensitive search
-- ✅ Type any part of a command and press `↑`
-- ✅ Python venv activates automatically
-- ✅ Lazy-loaded Node.js (faster startup)
+- Auto-complete with `Tab`
+- Case-insensitive search
+- Type any part of a command and press `↑`
+- Python venv activates automatically
+- Lazy-loaded Node.js (faster startup)
 
 <br>
 
-## 🐛 Fix Issues
+## 🐛 Troubleshooting
 
 **Completions broken?**
 ```bash

@@ -1,146 +1,125 @@
-# Arch notes
+# 🐧 Arch Linux Notes
 
-Personal Arch Linux notes so I can quickly redo a sane setup after reinstalls. Focus is on `yay` and day‑to‑day package management.
+> Personal setup reference for fast, sane reinstalls on Arch Linux
 
-## Useful links
+<br>
+
+## 📚 Quick Links
 
 - [Arch Linux](https://archlinux.org/)
 - [Pacman tips & tricks](https://wiki.archlinux.org/title/Pacman/Tips_and_tricks)
 - [Arch User Repository (AUR)](https://aur.archlinux.org/)
 - [EndeavourOS](https://endeavouros.com/)
 
-## System updates
+<br>
+
+## System Updates
 
 - Update everything (repos + AUR): `yay -Syu`
 - Include `--devel` packages: `yay -Syu --devel --timeupdate`
 
-## Searching and inspecting packages (yay)
+<br>
 
-- Search repos + AUR (quick): `yay <pattern>`
-- Search repos only: `yay -Ss <pattern>`
-- Search installed packages: `yay -Qs <pattern>`
-- Show package details: `yay -Si <package>`
-- Show files installed by a package: `yay -Ql <package>`
+## Searching & Inspecting Packages
 
-## Installed, AUR, and orphaned packages
+| Command | Purpose |
+|---------|---------|
+| `yay <pattern>` | Search repos + AUR (quick) |
+| `yay -Ss <pattern>` | Search repos only |
+| `yay -Qs <pattern>` | Search installed packages |
+| `yay -Si <package>` | Show package details |
+| `yay -Ql <package>` | Show files installed by a package |
 
-- Explicitly installed (not pulled as deps): `yay -Qe`
-- AUR / foreign packages: `yay -Qm`
-- Orphaned dependencies (removal candidates): `yay -Qdt`
+<br>
 
-## Installing, removing, cleaning (yay)
+## Package Management
 
-- Install from repos or AUR: `yay -S <package>`
-- Remove a package + unused deps: `yay -Rns <package>`
-- See what depends on a package before removing: `pactree -r <package>`
-- Remove unneeded dependencies: `yay -Yc`
-- Clean old package cache (interactive): `yay -Sc`
-- Clean all package caches (be careful): `yay -Scc`
+| Command | Purpose |
+|---------|---------|
+| `yay -Qe` | Explicitly installed packages |
+| `yay -Qm` | AUR / foreign packages |
+| `yay -Qdt` | Orphaned dependencies |
 
-## Mirrors and speed
+<br>
 
-- Install mirror helper (example): `yay -S rate-mirrors-bin`
-- Refresh Arch mirrors (adjust country/opts as needed):
+## Install & Remove
 
+| Command | Purpose |
+|---------|---------|
+| `yay -S <package>` | Install from repos or AUR |
+| `yay -Rns <package>` | Remove + unused deps |
+| `pactree -r <package>` | See what depends on package |
+| `yay -Yc` | Remove unneeded dependencies |
+| `yay -Sc` | Clean old caches (interactive) |
+| `yay -Scc` | Clean all caches (careful) |
+
+<br>
+
+## Mirrors & Speed
+
+Install mirror helper:
+```bash
+yay -S rate-mirrors-bin
+```
+
+Refresh Arch mirrors (adjust country/opts as needed):
 ```bash
 sudo rate-mirrors --allow-root arch | sudo tee /etc/pacman.d/mirrorlist
 ```
 
-For more options see:
-
+More options:
 - [rate-mirrors](https://github.com/westandskif/rate-mirrors)
 - [reflector](https://wiki.archlinux.org/title/Reflector)
 
-## Extra pacman tricks
+<br>
 
-These are still handy even if you mostly use `yay`:
+## Pacman Tricks
 
-- Find which package owns a file: `pacman -Qo /path/to/file`
-- Search sync database for a file (after `sudo pacman -Fy`): `pacman -F <filename>`
-- Verify installed files for a package: `pacman -Qk <package>` or `pacman -Qkk <package>`
-- Download packages to cache without installing: `pacman -Sw <package>`
-- Reinstall all sync packages:
+Still handy even when using `yay`:
 
+| Command | Purpose |
+|---------|---------|
+| `pacman -Qo /path/to/file` | Find which package owns a file |
+| `pacman -F <filename>` | Search sync database for file |
+| `pacman -Qk <package>` | Verify installed files |
+| `pacman -Sw <package>` | Download without installing |
+| `pacman -Qnq \| sudo pacman -S -` | Reinstall all sync packages |
+| `sudo paccache -r` | Clean old caches (pacman-contrib) |
+
+<br>
+
+## Remote Desktops & Streaming
+
+**Moonlight** (NVIDIA GameStream client):
 ```bash
-pacman -Qnq | sudo pacman -S -
+sudo pacman -S moonlight-qt
 ```
+Install on the machine receiving the stream (laptop/desktop).
 
-- Clean old package cache with `paccache` (from `pacman-contrib`): `sudo paccache -r`
+**Sunshine** (game streaming host):
+```bash
+yay -S sunshine
+```
+Run on gaming host, configure games/apps/firewall, then pair with Moonlight.
 
-## Remote desktops
-
-- Moonlight (client for NVIDIA GameStream‑like streaming): `sudo pacman -S moonlight-qt`  
-  Use this on the machine receiving the stream (your laptop/desktop).
-- Sunshine (game streaming host): `yay -S sunshine`  
-  Run this on the gaming host, configure games/apps and firewall, then pair Moonlight to Sunshine.
+<br>
 
 ## Graphics
 
-- NVIDIA installer: `sudo pacman -S nvidia-inst`  
-  After install, run the guided installer: `sudo nvidia-inst`.
-- Hybrid graphics switcher: `sudo pacman -S switcheroo`  
-  After install, enable and start:
-
+**NVIDIA drivers:**
 ```bash
+sudo pacman -S nvidia-inst
+sudo nvidia-inst
+```
+
+**Hybrid graphics switcher:**
+```bash
+sudo pacman -S switcheroo
 sudo systemctl enable --now switcheroo-control.service
 ```
 
-## Editors – VSCodium
+<br>
 
-VSCodium is a build of VS Code without the Microsoft telemetry, branding, or license issues.
+---
 
-```bash
-# Precompiled
-yay -S --needed vscodium-bin
-
-# From source
-yay -S --needed vscodium
-```
-
-Batch‑install some favourite extensions:
-
-```bash
-# --- AI / agents ---
-exts_ai=(
-  saoudrizwan.claude-dev
-  openai.chatgpt
-)
-
-# --- Git / GitHub tooling ---
-exts_git=(
-  vscode.github
-  vscode.github-authentication
-  mhutchie.git-graph
-)
-
-# --- Markdown / docs ---
-exts_docs=(
-  yzhang.markdown-all-in-one
-  DavidAnson.vscode-markdownlint
-  vscode.markdown-math
-)
-
-# --- Editing / UX ---
-exts_editing=(
-  vscodevim.vim
-  kisstkondoros.vscode-gutter-preview
-  johnpapa.vscode-peacock
-  ArthurLobo.easy-codesnap
-)
-
-# --- Debugging ---
-exts_debug=(
-  vscode.debug-auto-launch
-)
-
-# Install all (VSCodium)
-for e in \
-  "${exts_ai[@]}" \
-  "${exts_git[@]}" \
-  "${exts_docs[@]}" \
-  "${exts_editing[@]}" \
-  "${exts_debug[@]}"
-do
-  codium --install-extension "$e"
-done
-```
+💡 **Tip:** See [Editors & IDEs](./docs/editors/) for setup guides.
