@@ -25,8 +25,8 @@ sudo pacman -S zsh eza bat ripgrep fd fzf starship zoxide \
   direnv pkgfile atuin git-delta duf dust btop procs
 
 # Zinit (plugin manager) auto-installs on first run
-# Then copy the config
-./sync-zshrc.sh
+# Then copy the config (source of truth is dotfiles/)
+./scripts/sync-dotfiles.sh --pull
 ```
 
 <br>
@@ -156,4 +156,5 @@ sudo pkgfile --update
 
 ---
 
-💡 **Tip:** Run `./sync-zshrc.sh` anytime to update this config
+💡 **Tip:** After editing your local `~/.zshrc`, run:
+`./scripts/sync-dotfiles.sh --push`
