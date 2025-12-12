@@ -1,21 +1,39 @@
 #!/bin/bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DOTFILES_DIR="$ROOT_DIR/dotfiles"
+: "${HOME:?HOME is not set}"
+
+readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly DOTFILES_DIR="$ROOT_DIR/dotfiles"
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [--push|--pull] [--dry-run]
+Usage: $(basename "$0") [--push|--pull] [--dry-run] [-h|--help]
 
---push    Copy from \$HOME -> repo (update tracked dotfiles)
---pull    Copy from repo -> \$HOME (apply tracked dotfiles)
---dry-run Show what would change
+Sync tracked dotfiles between this repo and \$HOME.
+
+Modes (exactly one required):
+  --push    Copy from \$HOME -> repo (capture current dotfiles)
+  --pull    Copy from repo -> \$HOME (apply repo dotfiles)
+
+Options:
+  --dry-run Show what would change; do not write files.
+  -h, --help Show this help.
+
+Side effects:
+  - Creates destination directories as needed.
+  - Overwrites destination files without prompting.
+  - Uses cp -a to preserve permissions and symlinks.
 
 Currently synced:
   zsh/.zshrc               <-> ~/.zshrc
   kitty/kitty.conf         <-> ~/.config/kitty/kitty.conf
   kitty/current-theme.conf <-> ~/.config/kitty/current-theme.conf
+
+Examples:
+  ./scripts/sync-dotfiles.sh --push
+  ./scripts/sync-dotfiles.sh --pull
+  ./scripts/sync-dotfiles.sh --pull --dry-run
 EOF
 }
 
@@ -23,8 +41,22 @@ MODE=""
 DRY_RUN=0
 for arg in "$@"; do
   case "$arg" in
-    --push) MODE="push" ;;
-    --pull) MODE="pull" ;;
+    --push)
+      if [[ -n "$MODE" ]]; then
+        echo "Only one of --push or --pull may be specified." >&2
+        usage
+        exit 1
+      fi
+      MODE="push"
+      ;;
+    --pull)
+      if [[ -n "$MODE" ]]; then
+        echo "Only one of --push or --pull may be specified." >&2
+        usage
+        exit 1
+      fi
+      MODE="pull"
+      ;;
     --dry-run) DRY_RUN=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $arg"; usage; exit 1 ;;
@@ -63,11 +95,10 @@ sync_file() {
   fi
 
   mkdir -p "$(dirname "$dst")"
-  cp "$src" "$dst"
+  cp -a -- "$src" "$dst"
   echo "Synced $src -> $dst"
 }
 
 sync_file "zsh/.zshrc" "$HOME/.zshrc"
 sync_file "kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
 sync_file "kitty/current-theme.conf" "$HOME/.config/kitty/current-theme.conf"
-

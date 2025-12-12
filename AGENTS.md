@@ -20,11 +20,10 @@ This repo is meant to be a lightweight, version‑controlled reference for:
 ## Usage
 
 - Export current system state into `state/`:
-  - `./scripts/export-all.sh`
+  - `./scripts/export.sh all`
 - Sync tracked dotfiles from `$HOME` into the repo:
   - `./scripts/sync-dotfiles.sh --push`
 - Apply dotfiles from the repo into `$HOME`:
   - `./scripts/sync-dotfiles.sh --pull`
 
 Keep things simple: add docs or dotfiles whenever you change your setup, and re‑export state after major updates.
-
