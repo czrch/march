@@ -13,7 +13,9 @@ Usage: $(basename "$0") [--push|--pull] [--dry-run]
 --dry-run Show what would change
 
 Currently synced:
-  zsh/.zshrc
+  zsh/.zshrc               <-> ~/.zshrc
+  kitty/kitty.conf         <-> ~/.config/kitty/kitty.conf
+  kitty/current-theme.conf <-> ~/.config/kitty/current-theme.conf
 EOF
 }
 
@@ -36,13 +38,14 @@ fi
 
 sync_file() {
   local rel="$1"
+  local home_path="$2"
   local src dst
   if [[ "$MODE" == "push" ]]; then
-    src="$HOME/.${rel##*/}"
+    src="$home_path"
     dst="$DOTFILES_DIR/$rel"
   else
     src="$DOTFILES_DIR/$rel"
-    dst="$HOME/.${rel##*/}"
+    dst="$home_path"
   fi
 
   if [[ ! -f "$src" ]]; then
@@ -64,5 +67,7 @@ sync_file() {
   echo "Synced $src -> $dst"
 }
 
-sync_file "zsh/.zshrc"
+sync_file "zsh/.zshrc" "$HOME/.zshrc"
+sync_file "kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
+sync_file "kitty/current-theme.conf" "$HOME/.config/kitty/current-theme.conf"
 

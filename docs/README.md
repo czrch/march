@@ -5,10 +5,9 @@ Short entrypoint to all setup notes. Each doc should aim to answer:
 
 ## Topics
 
-- `terminal/` — Zsh/Zinit setup, prompt, CLI tooling.
+- `terminal/` — Zsh/Zinit setup plus Kitty terminal emulator.
 - `editors/` — Editor/IDE installs and extension lists.
 - `tweaks/` — Small system tweaks and checklists (to add).
 - `hardware/` — Machine‑specific notes (to add).
 
 If you add a new area, list it here with a one‑liner.
-
