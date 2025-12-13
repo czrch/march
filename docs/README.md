@@ -10,4 +10,10 @@ Short entrypoint to all setup notes. Each doc should aim to answer:
 - `tweaks/` — Small system tweaks and checklists (to add).
 - `hardware/` — Machine‑specific notes (to add).
 
+## Applying configs
+
+- Apply repo dotfiles to your home dir: `./scripts/bootstrap.sh dotfiles`
+- Preview changes first: `./scripts/bootstrap.sh dotfiles --dry-run`
+- See what’s managed: `./scripts/sync-dotfiles.sh --list`
+
 If you add a new area, list it here with a one‑liner.

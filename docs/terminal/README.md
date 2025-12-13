@@ -10,10 +10,15 @@ Terminal-related setup and configs.
 ## Quick Sync
 
 ```bash
-# Apply repo dotfiles to your home dir
-./scripts/sync-dotfiles.sh --pull
+# Apply repo dotfiles to your home dir (backs up overwritten files)
+./scripts/bootstrap.sh dotfiles
+
+# Preview changes first
+./scripts/bootstrap.sh dotfiles --dry-run
+
+# Check whether home differs from repo (non-zero exit if drift exists)
+./scripts/sync-dotfiles.sh --pull --check
 
 # Capture home dotfiles back into repo
 ./scripts/sync-dotfiles.sh --push
 ```
-

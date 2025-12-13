@@ -59,7 +59,7 @@ export_packages() {
     exit 1
   fi
   mkdir -p "$PACKAGES_DIR"
-  pacman -Qqe > "$PACKAGES_DIR/pacman-explicit.txt"
+  pacman -Qqen > "$PACKAGES_DIR/pacman-explicit.txt"
   pacman -Qqem > "$PACKAGES_DIR/aur-explicit.txt"
   echo "Wrote:"
   echo "  $PACKAGES_DIR/pacman-explicit.txt"
@@ -72,7 +72,10 @@ export_services() {
     exit 1
   fi
   mkdir -p "$STATE_DIR"
-  systemctl list-unit-files --state=enabled --no-pager > "$STATE_DIR/services-enabled.txt"
+  systemctl list-unit-files --state=enabled --no-legend --no-pager \
+    | awk '{print $1}' \
+    | sed '/^$/d' \
+    | sort -u > "$STATE_DIR/services-enabled.txt"
   echo "Wrote:"
   echo "  $STATE_DIR/services-enabled.txt"
 }
@@ -95,4 +98,3 @@ case "$command" in
     exit 1
     ;;
 esac
-

@@ -26,7 +26,7 @@ sudo pacman -S zsh eza bat ripgrep fd fzf starship zoxide \
 
 # Zinit (plugin manager) auto-installs on first run
 # Then copy the config (source of truth is dotfiles/)
-./scripts/sync-dotfiles.sh --pull
+./scripts/bootstrap.sh dotfiles
 ```
 
 <br>

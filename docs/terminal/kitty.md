@@ -25,7 +25,7 @@ Repo copies live in `dotfiles/kitty/`.
 ## Apply From Repo
 
 ```bash
-./scripts/sync-dotfiles.sh --pull
+./scripts/bootstrap.sh dotfiles
 ```
 
 ## Push Local Changes To Repo
