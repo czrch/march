@@ -24,6 +24,15 @@ Export current system state into `state/` (packages + enabled services):
 ./scripts/bootstrap.sh export
 ```
 
+Reinstall packages later from `state/`:
+
+```bash
+./scripts/bootstrap.sh packages --dry-run
+./scripts/bootstrap.sh packages
+```
+
+Package install requires `sudo` (pacman) and an AUR helper (`yay` or `paru`) for AUR packages.
+
 Dotfiles are mapped in `dotfiles/manifest.tsv`.
 
 By default, applying (`--pull`) makes a timestamped backup of any overwritten

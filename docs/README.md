@@ -15,5 +15,6 @@ Short entrypoint to all setup notes. Each doc should aim to answer:
 - Apply repo dotfiles to your home dir: `./scripts/bootstrap.sh dotfiles`
 - Preview changes first: `./scripts/bootstrap.sh dotfiles --dry-run`
 - See what’s managed: `./scripts/sync-dotfiles.sh --list`
+- Install packages from `state/`: `./scripts/bootstrap.sh packages`
 
 If you add a new area, list it here with a one‑liner.

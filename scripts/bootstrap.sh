@@ -14,14 +14,16 @@ Convenience entrypoint for setting up this repo on a fresh machine.
 
 Commands:
   dotfiles   Apply repo dotfiles to $HOME (delegates to sync-dotfiles.sh --pull)
+  packages   Install packages from `state/` (delegates to install-packages.sh all)
   export     Export current system state into state/ (delegates to export.sh all)
 
 Options:
-  --dry-run  For dotfiles: show changes without writing.
+  --dry-run  Supported by dotfiles/packages (passes through).
 
 Examples:
   ./scripts/bootstrap.sh dotfiles
   ./scripts/bootstrap.sh dotfiles --dry-run
+  ./scripts/bootstrap.sh packages --dry-run
   ./scripts/bootstrap.sh export
 
 Notes:
@@ -46,6 +48,12 @@ case "$command" in
     fi
     exec "$ROOT_DIR/scripts/sync-dotfiles.sh" --pull --manifest "$DOTFILES_MANIFEST_DEFAULT" "$@"
     ;;
+  packages)
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      exec "$ROOT_DIR/scripts/install-packages.sh" --help
+    fi
+    exec "$ROOT_DIR/scripts/install-packages.sh" all "$@"
+    ;;
   export)
     if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
       usage
@@ -59,4 +67,3 @@ case "$command" in
     exit 1
     ;;
 esac
-
