@@ -8,17 +8,19 @@ My Arch setup notebook + dotfiles stash.
 ## Quick Stuff
 
 ```bash
-./scripts/bootstrap.sh dotfiles
-./scripts/bootstrap.sh export
-./scripts/bootstrap.sh packages
+make dotfiles-push
+make export
+make packages
 ```
 
 Docs site:
 
 ```bash
 sudo pacman -S uv
-./scripts/docs.sh sync
-./scripts/docs.sh serve
+make docs-sync
+make docs-serve
 ```
 
 Docs live in `docs/` and the MkDocs config is `mkdocs.yml`.
+
+Run `make help` for the full target list and common options.
