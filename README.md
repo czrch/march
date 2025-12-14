@@ -6,6 +6,8 @@
 
 ## Quickstart (apply configs)
 
+Full guide: `docs/bootstrap.md`
+
 Clone the repo, then apply dotfiles into your home directory:
 
 ```bash

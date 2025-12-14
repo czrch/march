@@ -7,6 +7,7 @@ Short entrypoint to all setup notes. Each doc should aim to answer:
 
 - `terminal/` — Zsh/Zinit setup plus Kitty terminal emulator.
 - `editors/` — Editor/IDE installs and extension lists.
+- `bootstrap.md` — apply dotfiles + reinstall packages from `state/`.
 - `tweaks/` — Small system tweaks and checklists (to add).
 - `hardware/` — Machine‑specific notes (to add).
 
@@ -16,5 +17,6 @@ Short entrypoint to all setup notes. Each doc should aim to answer:
 - Preview changes first: `./scripts/bootstrap.sh dotfiles --dry-run`
 - See what’s managed: `./scripts/sync-dotfiles.sh --list`
 - Install packages from `state/`: `./scripts/bootstrap.sh packages`
+- Full walkthrough: `docs/bootstrap.md`
 
 If you add a new area, list it here with a one‑liner.
