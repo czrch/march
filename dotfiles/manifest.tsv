@@ -6,3 +6,6 @@
 zsh/.zshrc .zshrc
 kitty/kitty.conf .config/kitty/kitty.conf
 kitty/current-theme.conf .config/kitty/current-theme.conf
+cline/Hooks Documents/Cline/Hooks
+cline/Rules Documents/Cline/Rules
+cline/Workflows Documents/Cline/Workflows

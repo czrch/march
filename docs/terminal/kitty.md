@@ -31,7 +31,7 @@ Repo copies live in `dotfiles/kitty/`.
 ## Push Local Changes To Repo
 
 ```bash
-./scripts/sync-dotfiles.sh --push
+./scripts/sync-dotfiles.sh --pull
 ```
 
 ## Useful Keybinds
@@ -69,7 +69,7 @@ kitty +kitten themes
 - Kitty writes the selected theme to `current-theme.conf`.
 - Your `kitty.conf` includes it via `include current-theme.conf`.
 
-If you want to track a new theme, re‑run the kitten then `--push`.
+If you want to track a new theme, re‑run the kitten then `--pull`.
 
 ## Notes / Gotchas
 

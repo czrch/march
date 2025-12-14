@@ -14,29 +14,32 @@ Usage: $(basename "$0") [--push|--pull] [options] [-h|--help]
 Sync tracked dotfiles between this repo and \$HOME.
 
 Modes (exactly one required unless using --list):
-  --push    Copy from \$HOME -> repo (capture current dotfiles)
-  --pull    Copy from repo -> \$HOME (apply repo dotfiles)
+  --pull    Copy from \$HOME -> repo (capture current dotfiles into the repo)
+  --push    Copy from repo -> \$HOME (apply repo dotfiles into your home dir)
 
 Options:
   --manifest PATH Use a dotfiles manifest (default: $DEFAULT_MANIFEST).
   --dry-run Show what would change; do not write files.
   --check   Show drift status and exit non-zero if differences exist.
   --list    Print the dotfiles manifest and exit (no mode required).
-  --backup      Backup destination files before overwriting (default: on for --pull).
+  --yes     Assume "yes" for all confirmations (non-interactive safe).
+  --backup      Backup destination files before overwriting (default: on for --push).
   --no-backup   Disable backups.
   --backup-dir DIR  Where to place backups (default: \$XDG_DATA_HOME/march/backups/<timestamp>).
   -h, --help Show this help.
 
 Side effects:
   - Creates destination directories as needed.
-  - Overwrites destination files without prompting (optionally backed up).
-  - Uses cp -a to preserve permissions and symlinks.
+  - Prompts before each change unless --yes is provided.
+  - Overwrites destination files (optionally backed up).
+  - Directory entries are synced recursively (extra destination files are left untouched).
+  - Uses cp -a (files) and rsync -a (directories) to preserve permissions and symlinks.
 
 Examples:
-  ./scripts/sync-dotfiles.sh --push
   ./scripts/sync-dotfiles.sh --pull
-  ./scripts/sync-dotfiles.sh --pull --dry-run
-  ./scripts/sync-dotfiles.sh --pull --check
+  ./scripts/sync-dotfiles.sh --push
+  ./scripts/sync-dotfiles.sh --push --dry-run
+  ./scripts/sync-dotfiles.sh --push --check
   ./scripts/sync-dotfiles.sh --list
 EOF
 }
@@ -46,6 +49,7 @@ MANIFEST="$DEFAULT_MANIFEST"
 DRY_RUN=0
 CHECK=0
 LIST=0
+YES=0
 BACKUP=""
 BACKUP_DIR=""
 BACKUP_NOTICE_PRINTED=0
@@ -74,6 +78,7 @@ while [[ $# -gt 0 ]]; do
     --dry-run) DRY_RUN=1; shift ;;
     --check) CHECK=1; shift ;;
     --list) LIST=1; shift ;;
+    -y|--yes) YES=1; shift ;;
     --backup) BACKUP="1"; shift ;;
     --no-backup) BACKUP="0"; shift ;;
     --backup-dir)
@@ -120,8 +125,15 @@ if [[ ! -f "$MANIFEST" ]]; then
   exit 1
 fi
 
+if [[ "$YES" -eq 0 && "$CHECK" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
+  if [[ ! -t 0 ]]; then
+    echo "Refusing to run without confirmations in non-interactive mode; pass --yes to proceed." >&2
+    exit 1
+  fi
+fi
+
 if [[ -z "$BACKUP" ]]; then
-  if [[ "$MODE" == "pull" ]]; then
+  if [[ "$MODE" == "push" ]]; then
     BACKUP="1"
   else
     BACKUP="0"
@@ -140,7 +152,10 @@ backup_file() {
   if [[ "$BACKUP" != "1" ]]; then
     return 0
   fi
-  if [[ ! -f "$dst" ]]; then
+  if [[ "$dst" != "$HOME/"* ]]; then
+    return 0
+  fi
+  if [[ ! -e "$dst" && ! -L "$dst" ]]; then
     return 0
   fi
   if [[ -z "$BACKUP_DIR" ]]; then
@@ -155,6 +170,78 @@ backup_file() {
   cp -a -- "$dst" "$backup_path"
 }
 
+have_rsync() {
+  command -v rsync >/dev/null 2>&1
+}
+
+paths_match() {
+  local src="$1"
+  local dst="$2"
+
+  if [[ -L "$src" ]]; then
+    [[ -L "$dst" ]] || return 1
+    [[ "$(readlink "$src")" == "$(readlink "$dst")" ]] || return 1
+    return 0
+  fi
+
+  if [[ -f "$src" ]]; then
+    [[ -f "$dst" ]] || return 1
+    cmp -s -- "$src" "$dst"
+    return $?
+  fi
+
+  if [[ -d "$src" ]]; then
+    [[ -d "$dst" ]] || return 1
+    # For directory entries, we treat the source as authoritative but do not
+    # consider extra files in the destination to be drift.
+    while IFS= read -r -d '' src_item; do
+      local rel="${src_item#"$src"/}"
+      local dst_item="$dst/$rel"
+
+      if [[ -L "$src_item" ]]; then
+        [[ -L "$dst_item" ]] || return 1
+        [[ "$(readlink "$src_item")" == "$(readlink "$dst_item")" ]] || return 1
+        continue
+      fi
+
+      [[ -f "$src_item" ]] || return 1
+      [[ -f "$dst_item" ]] || return 1
+      cmp -s -- "$src_item" "$dst_item" || return 1
+    done < <(find "$src" \( -type f -o -type l \) ! -name '.gitkeep' -print0)
+    return 0
+  fi
+
+  return 1
+}
+
+confirm_sync() {
+  local src="$1"
+  local dst="$2"
+
+  if [[ "$YES" -eq 1 ]]; then
+    return 0
+  fi
+
+  local kind="file"
+  if [[ -d "$src" ]]; then
+    kind="dir"
+  elif [[ -L "$src" ]]; then
+    kind="symlink"
+  fi
+
+  local verb="copy"
+  if [[ -e "$dst" || -L "$dst" ]]; then
+    verb="update"
+  fi
+
+  local reply=""
+  read -r -p "You are about to $verb $kind: $src -> $dst. Continue? [y/N] " reply
+  case "$reply" in
+    y|Y|yes|YES) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 sync_entry() {
   local repo_rel="$1"
   local home_rel="$2"
@@ -165,7 +252,7 @@ sync_entry() {
   fi
 
   local src dst
-  if [[ "$MODE" == "push" ]]; then
+  if [[ "$MODE" == "pull" ]]; then
     src="$home_path"
     dst="$DOTFILES_DIR/$repo_rel"
   else
@@ -173,17 +260,17 @@ sync_entry() {
     dst="$home_path"
   fi
 
-  if [[ ! -f "$src" ]]; then
+  if [[ ! -e "$src" && ! -L "$src" ]]; then
     echo "Skip missing source: $src"
     return 0
   fi
 
   if [[ "$CHECK" -eq 1 ]]; then
-    if [[ ! -f "$dst" ]]; then
+    if [[ ! -e "$dst" && ! -L "$dst" ]]; then
       echo "MISSING_DST $dst"
       return 1
     fi
-    if cmp -s "$src" "$dst"; then
+    if paths_match "$src" "$dst"; then
       echo "OK $dst"
       return 0
     fi
@@ -192,19 +279,49 @@ sync_entry() {
   fi
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    if [[ ! -f "$dst" ]]; then
+    if [[ ! -e "$dst" && ! -L "$dst" ]]; then
       echo "Would copy $src -> $dst"
-    elif ! cmp -s "$src" "$dst"; then
+    elif ! paths_match "$src" "$dst"; then
       echo "Would update $dst from $src"
     fi
     return 0
   fi
 
-  if [[ "$MODE" == "pull" ]]; then
+  if [[ -e "$dst" || -L "$dst" ]]; then
+    if paths_match "$src" "$dst"; then
+      return 0
+    fi
+  fi
+
+  if ! confirm_sync "$src" "$dst"; then
+    echo "Skipped $dst"
+    return 0
+  fi
+
+  if [[ "$MODE" == "push" ]]; then
     backup_file "$dst"
   fi
 
   mkdir -p "$(dirname "$dst")"
+  if [[ -d "$src" ]]; then
+    if [[ -e "$dst" && ! -d "$dst" ]]; then
+      echo "Destination exists but is not a directory: $dst" >&2
+      return 1
+    fi
+    if ! have_rsync; then
+      echo "rsync is required to sync directory entries (missing on PATH)." >&2
+      return 1
+    fi
+    mkdir -p "$dst"
+    rsync -a --exclude='.gitkeep' -- "$src/" "$dst/"
+    echo "Synced dir $src -> $dst"
+    return 0
+  fi
+
+  if [[ -d "$dst" ]]; then
+    echo "Destination exists but is a directory: $dst" >&2
+    return 1
+  fi
   cp -a -- "$src" "$dst"
   echo "Synced $src -> $dst"
 }

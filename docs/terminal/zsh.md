@@ -157,4 +157,4 @@ sudo pkgfile --update
 ---
 
 💡 **Tip:** After editing your local `~/.zshrc`, run:
-`./scripts/sync-dotfiles.sh --push`
+`./scripts/sync-dotfiles.sh --pull`

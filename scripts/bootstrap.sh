@@ -13,12 +13,13 @@ Usage: bootstrap.sh <command> [options] [-h|--help]
 Convenience entrypoint for setting up this repo on a fresh machine.
 
 Commands:
-  dotfiles   Apply repo dotfiles to $HOME (delegates to sync-dotfiles.sh --pull)
+  dotfiles   Apply repo dotfiles to $HOME (delegates to sync-dotfiles.sh --push)
   packages   Install packages from `state/` (delegates to install-packages.sh all)
   export     Export current system state into state/ (delegates to export.sh all)
 
 Options:
   --dry-run  Supported by dotfiles/packages (passes through).
+  --yes      Supported by dotfiles (passes through).
 
 Examples:
   ./scripts/bootstrap.sh dotfiles
@@ -46,7 +47,7 @@ case "$command" in
       usage
       exit 0
     fi
-    exec "$ROOT_DIR/scripts/sync-dotfiles.sh" --pull --manifest "$DOTFILES_MANIFEST_DEFAULT" "$@"
+    exec "$ROOT_DIR/scripts/sync-dotfiles.sh" --push --manifest "$DOTFILES_MANIFEST_DEFAULT" "$@"
     ;;
   packages)
     if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then

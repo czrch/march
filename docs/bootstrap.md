@@ -22,6 +22,12 @@ Preview changes first:
 ./scripts/bootstrap.sh dotfiles --dry-run
 ```
 
+Apply is interactive by default (it will prompt before each change). To skip prompts:
+
+```bash
+./scripts/bootstrap.sh dotfiles --yes
+```
+
 See what’s managed:
 
 ```bash
@@ -31,7 +37,7 @@ See what’s managed:
 Check drift (non-zero exit if differences exist):
 
 ```bash
-./scripts/sync-dotfiles.sh --pull --check
+./scripts/sync-dotfiles.sh --push --check
 ```
 
 ### 2) Export system state
@@ -65,13 +71,13 @@ Requirements:
 
 ## Backups (dotfiles)
 
-By default, `--pull` creates a timestamped backup of overwritten destination files:
+By default, `--push` creates a timestamped backup of overwritten destination files:
 - `$XDG_DATA_HOME/march/backups/<timestamp>/...` (or `~/.local/share/march/backups/...`)
 
 Disable backups:
 
 ```bash
-./scripts/sync-dotfiles.sh --pull --no-backup
+./scripts/sync-dotfiles.sh --push --no-backup
 ```
 
 ## Adding a new dotfile
@@ -89,4 +95,3 @@ Disable backups:
 
 - `state/` is generated output; it’s safe to delete and re-export.
 - `install-packages.sh` does not install `yay`/`paru` for you.
-

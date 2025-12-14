@@ -16,9 +16,12 @@ Terminal-related setup and configs.
 # Preview changes first
 ./scripts/bootstrap.sh dotfiles --dry-run
 
+# Apply without prompts
+./scripts/bootstrap.sh dotfiles --yes
+
 # Check whether home differs from repo (non-zero exit if drift exists)
-./scripts/sync-dotfiles.sh --pull --check
+./scripts/sync-dotfiles.sh --push --check
 
 # Capture home dotfiles back into repo
-./scripts/sync-dotfiles.sh --push
+./scripts/sync-dotfiles.sh --pull
 ```

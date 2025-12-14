@@ -17,8 +17,10 @@ Clone the repo, then apply dotfiles into your home directory:
 Or run the underlying sync directly:
 
 ```bash
-./scripts/sync-dotfiles.sh --pull
+./scripts/sync-dotfiles.sh --push
 ```
+
+Note: `sync-dotfiles.sh` prompts before each change by default. Pass `--yes` to skip prompts.
 
 Export current system state into `state/` (packages + enabled services):
 
@@ -37,7 +39,7 @@ Package install requires `sudo` (pacman) and an AUR helper (`yay` or `paru`) for
 
 Dotfiles are mapped in `dotfiles/manifest.tsv`.
 
-By default, applying (`--pull`) makes a timestamped backup of any overwritten
+By default, applying (`--push`) makes a timestamped backup of any overwritten
 destination file under `$XDG_DATA_HOME/march/backups/` (or `~/.local/share/...`).
 
 <br>
