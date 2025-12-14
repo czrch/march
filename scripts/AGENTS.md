@@ -1,7 +1,7 @@
 <INSTRUCTIONS>
 # scripts/
 
-This directory contains small helpers for exporting, syncing, and applying repo state.
+This directory contains small helpers for exporting, syncing, applying repo state, and serving the docs site.
 
 ## Script standards
 
@@ -21,4 +21,3 @@ This directory contains small helpers for exporting, syncing, and applying repo 
   - If a script grows complex, consider splitting or documenting the rationale.
 
 </INSTRUCTIONS>
-

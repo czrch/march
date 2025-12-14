@@ -1,165 +1,24 @@
-# 🐧 Arch Linux Notes
+# march
 
-> Personal setup reference for fast, sane reinstalls on Arch Linux
+My Arch setup notebook + dotfiles stash.
 
-<br>
+> [!NOTE]
+> Under construction!
 
-## Quickstart (apply configs)
-
-Full guide: `docs/bootstrap.md`
-
-Clone the repo, then apply dotfiles into your home directory:
+## Quick Stuff
 
 ```bash
 ./scripts/bootstrap.sh dotfiles
-```
-
-Or run the underlying sync directly:
-
-```bash
-./scripts/sync-dotfiles.sh --push
-```
-
-Note: `sync-dotfiles.sh` prompts before each change by default. Pass `--yes` to skip prompts.
-
-Export current system state into `state/` (packages + enabled services):
-
-```bash
 ./scripts/bootstrap.sh export
-```
-
-Reinstall packages later from `state/`:
-
-```bash
-./scripts/bootstrap.sh packages --dry-run
 ./scripts/bootstrap.sh packages
 ```
 
-Package install requires `sudo` (pacman) and an AUR helper (`yay` or `paru`) for AUR packages.
+Docs site:
 
-Dotfiles are mapped in `dotfiles/manifest.tsv`.
-
-By default, applying (`--push`) makes a timestamped backup of any overwritten
-destination file under `$XDG_DATA_HOME/march/backups/` (or `~/.local/share/...`).
-
-<br>
-
-## 📚 Quick Links
-
-- [Arch Linux](https://archlinux.org/)
-- [Pacman tips & tricks](https://wiki.archlinux.org/title/Pacman/Tips_and_tricks)
-- [Arch User Repository (AUR)](https://aur.archlinux.org/)
-- [EndeavourOS](https://endeavouros.com/)
-
-<br>
-
-## System Updates
-
-- Update everything (repos + AUR): `yay -Syu`
-- Include `--devel` packages: `yay -Syu --devel --timeupdate`
-
-<br>
-
-## Searching & Inspecting Packages
-
-| Command | Purpose |
-|---------|---------|
-| `yay <pattern>` | Search repos + AUR (quick) |
-| `yay -Ss <pattern>` | Search repos only |
-| `yay -Qs <pattern>` | Search installed packages |
-| `yay -Si <package>` | Show package details |
-| `yay -Ql <package>` | Show files installed by a package |
-
-<br>
-
-## Package Management
-
-| Command | Purpose |
-|---------|---------|
-| `yay -Qe` | Explicitly installed packages |
-| `yay -Qm` | AUR / foreign packages |
-| `yay -Qdt` | Orphaned dependencies |
-
-<br>
-
-## Install & Remove
-
-| Command | Purpose |
-|---------|---------|
-| `yay -S <package>` | Install from repos or AUR |
-| `yay -Rns <package>` | Remove + unused deps |
-| `pactree -r <package>` | See what depends on package |
-| `yay -Yc` | Remove unneeded dependencies |
-| `yay -Sc` | Clean old caches (interactive) |
-| `yay -Scc` | Clean all caches (careful) |
-
-<br>
-
-## Mirrors & Speed
-
-Install mirror helper:
 ```bash
-yay -S rate-mirrors-bin
+sudo pacman -S uv
+./scripts/docs.sh sync
+./scripts/docs.sh serve
 ```
 
-Refresh Arch mirrors (adjust country/opts as needed):
-```bash
-sudo rate-mirrors --allow-root arch | sudo tee /etc/pacman.d/mirrorlist
-```
-
-More options:
-- [rate-mirrors](https://github.com/westandskif/rate-mirrors)
-- [reflector](https://wiki.archlinux.org/title/Reflector)
-
-<br>
-
-## Pacman Tricks
-
-Still handy even when using `yay`:
-
-| Command | Purpose |
-|---------|---------|
-| `pacman -Qo /path/to/file` | Find which package owns a file |
-| `pacman -F <filename>` | Search sync database for file |
-| `pacman -Qk <package>` | Verify installed files |
-| `pacman -Sw <package>` | Download without installing |
-| `pacman -Qnq \| sudo pacman -S -` | Reinstall all sync packages |
-| `sudo paccache -r` | Clean old caches (pacman-contrib) |
-
-<br>
-
-## Remote Desktops & Streaming
-
-**Moonlight** (NVIDIA GameStream client):
-```bash
-sudo pacman -S moonlight-qt
-```
-Install on the machine receiving the stream (laptop/desktop).
-
-**Sunshine** (game streaming host):
-```bash
-yay -S sunshine
-```
-Run on gaming host, configure games/apps/firewall, then pair with Moonlight.
-
-<br>
-
-## Graphics
-
-**NVIDIA drivers:**
-```bash
-sudo pacman -S nvidia-inst
-sudo nvidia-inst
-```
-
-**Hybrid graphics switcher:**
-```bash
-sudo pacman -S switcheroo
-sudo systemctl enable --now switcheroo-control.service
-```
-
-<br>
-
----
-
-💡 **Tip:** See [Editors & IDEs](./docs/editors/) for setup guides.
+Docs live in `docs/` and the MkDocs config is `mkdocs.yml`.

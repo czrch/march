@@ -10,3 +10,16 @@ pnpm-debug.log*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
+*.pyd
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# MkDocs
+site/
+.mkdocs_cache/

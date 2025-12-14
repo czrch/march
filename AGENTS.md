@@ -11,11 +11,13 @@ This repo is meant to be a lightweight, version‑controlled reference for:
 
 ## Structure
 
-- `README.md` — quick global notes and links.
-- `docs/` — topic guides (terminal, editors, tweaks, hardware, etc.).
+- `README.md` — short entrypoint.
+- `docs/` — MkDocs pages (currently just an index + pacman/yay helpers).
 - `dotfiles/` — tracked config files, organized by tool.
 - `state/` — auto‑generated exports (safe to delete/rebuild).
 - `scripts/` — utilities for exporting and syncing.
+- `mkdocs.yml` — MkDocs site config.
+- `pyproject.toml` / `uv.lock` — Python docs tooling (uv).
 
 ## Usage
 
@@ -25,5 +27,9 @@ This repo is meant to be a lightweight, version‑controlled reference for:
   - `./scripts/sync-dotfiles.sh --pull`
 - Apply dotfiles from the repo into `$HOME`:
   - `./scripts/sync-dotfiles.sh --push`
+
+- Work on the docs site locally:
+  - `./scripts/docs.sh sync`
+  - `./scripts/docs.sh serve`
 
 Keep things simple: add docs or dotfiles whenever you change your setup, and re‑export state after major updates.
