@@ -235,7 +235,8 @@ confirm_sync() {
   fi
 
   local reply=""
-  read -r -p "You are about to $verb $kind: $src -> $dst. Continue? [y/N] " reply
+  # Explicitly read from terminal and write prompt to stderr
+  read -r -p "You are about to $verb $kind: $src -> $dst. Continue? [y/N] " reply </dev/tty >/dev/tty 2>&1
   case "$reply" in
     y|Y|yes|YES) return 0 ;;
     *) return 1 ;;
@@ -289,12 +290,13 @@ sync_entry() {
 
   if [[ -e "$dst" || -L "$dst" ]]; then
     if paths_match "$src" "$dst"; then
+      echo "Up-to-date: $dst"
       return 0
     fi
   fi
 
   if ! confirm_sync "$src" "$dst"; then
-    echo "Skipped $dst"
+    echo "Skipped by user: $dst"
     return 0
   fi
 
