@@ -3,6 +3,13 @@ name: Deploy MkDocs to GitHub Pages
 on:
   push:
     branches: [main]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'scripts/docs.sh'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
