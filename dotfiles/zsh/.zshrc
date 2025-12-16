@@ -273,20 +273,30 @@ if [[ -r /usr/share/nvm/init-nvm.sh ]]; then
   npm()  { _nvm_load; npm  "$@"; }
   npx()  { _nvm_load; npx  "$@"; }
   
+  # Detect NVM directory (supports custom installations)
+  local nvm_versions_dir=""
+  if [[ -n "$NVM_DIR" && -d "$NVM_DIR/versions/node" ]]; then
+    nvm_versions_dir="$NVM_DIR/versions/node"
+  elif [[ -d "$HOME/.config/nvm/versions/node" ]]; then
+    nvm_versions_dir="$HOME/.config/nvm/versions/node"
+  elif [[ -d "$HOME/.nvm/versions/node" ]]; then
+    nvm_versions_dir="$HOME/.nvm/versions/node"
+  fi
+  
   # Scan for globally installed npm packages and create lazy-load wrappers
   # This allows global packages to work immediately without manually loading NVM first
-  if [[ -d "$HOME/.nvm/versions/node" ]]; then
+  if [[ -n "$nvm_versions_dir" && -d "$nvm_versions_dir" ]]; then
     # Find the current/default node version's global bin directory
     local nvm_current_bin=""
     
     # Try to find default or current version
-    if [[ -L "$HOME/.nvm/versions/node/default" ]]; then
-      nvm_current_bin="$HOME/.nvm/versions/node/default/bin"
-    elif [[ -d "$HOME/.nvm/versions/node/current" ]]; then
-      nvm_current_bin="$HOME/.nvm/versions/node/current/bin"
+    if [[ -L "$nvm_versions_dir/default" ]]; then
+      nvm_current_bin="$nvm_versions_dir/default/bin"
+    elif [[ -d "$nvm_versions_dir/current" ]]; then
+      nvm_current_bin="$nvm_versions_dir/current/bin"
     else
       # Find most recent version
-      nvm_current_bin=$(find "$HOME/.nvm/versions/node" -maxdepth 2 -type d -name "bin" 2>/dev/null | sort -V | tail -1)
+      nvm_current_bin=$(find "$nvm_versions_dir" -maxdepth 2 -type d -name "bin" 2>/dev/null | sort -V | tail -1)
     fi
     
     # Create wrapper functions for global npm packages
@@ -360,6 +370,19 @@ _venv_auto_activate() {
 }
 add-zsh-hook chpwd _venv_auto_activate
 _venv_auto_activate  # Check on shell start
+
+# === Rust ===
+# Cargo/Rustup environment
+if [[ -d "$HOME/.cargo" ]]; then
+  export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
+  export RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
+  path=("$CARGO_HOME/bin" $path)
+  
+  # Rust environment (if cargo env file exists)
+  if [[ -f "$CARGO_HOME/env" ]]; then
+    source "$CARGO_HOME/env"
+  fi
+fi
 
 # -----------------------------------------------------------------------------
 # 8) Container Tools (Docker/Podman)
@@ -457,6 +480,22 @@ alias dpa='docker ps -a'
 alias di='docker images'
 alias dpsa='docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
 
+# Rust/Cargo shortcuts
+alias cr='cargo run'
+alias cb='cargo build'
+alias cbr='cargo build --release'
+alias ct='cargo test'
+alias cc='cargo check'
+alias ccl='cargo clean'
+alias cw='cargo watch'
+alias cu='cargo update'
+alias cn='cargo new'
+alias ci='cargo init'
+alias cdo='cargo doc --open'
+alias cf='cargo fmt'
+alias cfc='cargo fmt -- --check'
+alias ccl='cargo clippy'
+
 # Safety aliases (ask before destructive operations)
 alias rm='rm -i'
 alias mv='mv -i'
@@ -468,6 +507,9 @@ alias cp='cp -i'
 command -v gh >/dev/null && eval "$(gh completion -s zsh)"
 command -v kubectl >/dev/null && source <(kubectl completion zsh)
 command -v helm >/dev/null && source <(helm completion zsh)
+command -v cline >/dev/null && source <(cline completion zsh)
+command -v codex >/dev/null && source <(codex completion zsh)
+command -v github-copilot-cli >/dev/null && eval "$(github-copilot-cli alias -- "$0")"
 
 # -----------------------------------------------------------------------------
 # 11) Useful functions
@@ -742,6 +784,39 @@ uvti() {
   echo "📦 Installing tool: $1"
   uv tool install "$1"
   echo "✅ Tool installed: $1"
+}
+
+# === Rust/Cargo Functions ===
+
+# Cargo fuzzy test runner
+ctest() {
+  local test=$(cargo test -- --list 2>/dev/null | grep -v "^$" | tail -n +2 | fzf --height=40%)
+  [[ -n "$test" ]] && cargo test "$test" -- --nocapture
+}
+
+# Rustup update all toolchains
+rust-update() {
+  echo "🦀 Updating Rust toolchain..."
+  rustup update
+  echo "✅ Rust updated!"
+}
+
+# Cargo watch with automatic recompilation
+cwr() {
+  if ! command -v cargo-watch >/dev/null; then
+    echo "❌ cargo-watch not installed. Install with: cargo install cargo-watch"
+    return 1
+  fi
+  cargo watch -x run
+}
+
+# Cargo watch tests
+cwt() {
+  if ! command -v cargo-watch >/dev/null; then
+    echo "❌ cargo-watch not installed. Install with: cargo install cargo-watch"
+    return 1
+  fi
+  cargo watch -x test
 }
 
 # === Enhanced Development Workflow Functions ===
