@@ -4,8 +4,11 @@
 # repo_rel_path is relative to `dotfiles/`
 # home_rel_path is relative to `$HOME/` (or absolute)
 zsh/.zshrc .zshrc
+starship/starship.toml .config/starship.toml
 kitty/kitty.conf .config/kitty/kitty.conf
 kitty/current-theme.conf .config/kitty/current-theme.conf
 cline/Hooks Documents/Cline/Hooks
 cline/Rules Documents/Cline/Rules
 cline/Workflows Documents/Cline/Workflows
+vscodium/settings.json .config/VSCodium/User/settings.json
+vscodium/extensions.txt .config/VSCodium/User/extensions.txt

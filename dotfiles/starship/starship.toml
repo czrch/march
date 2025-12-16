@@ -1,0 +1,178 @@
+# Modern Single-Line Starship Prompt
+# https://starship.rs/config/
+
+# Performance optimizations
+command_timeout = 1000
+scan_timeout = 30
+
+# Minimal spacing
+add_newline = true
+
+# Single-line format - clean and modern
+format = """
+$username$hostname$directory$git_branch$git_status$git_state\
+$nodejs$python$rust$golang$java$cmake\
+$docker_context$package$cmd_duration$jobs$status
+$character"""
+
+# Simple continuation
+continuation_prompt = "▶▶ "
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vicmd_symbol = "[❮](bold yellow)"
+
+[username]
+style_user = "bold cyan"
+style_root = "bold red"
+format = "[$user]($style) "
+disabled = false
+show_always = false  # Only show in SSH sessions
+
+[hostname]
+ssh_only = true  # Only show hostname when connected via SSH
+format = "at [$hostname](bold purple) "
+disabled = false
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+style = "bold blue"
+read_only = " 🔒"
+format = "in [$path]($style)[$read_only]($read_only_style) "
+home_symbol = "~"
+
+[git_branch]
+symbol = " "
+style = "bold purple"
+format = "on [$symbol$branch]($style) "
+
+[git_status]
+format = '([\[$all_status$ahead_behind\]]($style) )'
+style = "bold yellow"
+conflicted = "🏳"
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+untracked = "?${count}"
+stashed = "📦"
+modified = "!${count}"
+staged = "+${count}"
+renamed = "»${count}"
+deleted = "✘${count}"
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+style = "bright-black"
+
+[git_commit]
+commit_hash_length = 7
+tag_symbol = "🏷 "
+disabled = true
+
+# Language modules - compact format
+[nodejs]
+symbol = " "
+format = "via [$symbol$version]($style) "
+style = "bold green"
+detect_files = ["package.json", ".node-version", ".nvmrc"]
+
+[python]
+symbol = " "
+format = 'via [$symbol$version( \($virtualenv\))]($style) '
+style = "bold yellow"
+detect_files = ["requirements.txt", ".python-version", "pyproject.toml", "Pipfile", "setup.py", "tox.ini"]
+
+[rust]
+symbol = " "
+format = "via [$symbol$version]($style) "
+style = "bold red"
+detect_files = ["Cargo.toml", "Cargo.lock"]
+
+[golang]
+symbol = " "
+format = "via [$symbol$version]($style) "
+style = "bold cyan"
+detect_files = ["go.mod", "go.sum"]
+
+[java]
+symbol = " "
+format = "via [$symbol$version]($style) "
+style = "bold red"
+detect_files = ["pom.xml", "build.gradle.kts", "build.gradle"]
+
+[cmake]
+symbol = "△ "
+format = "via [$symbol$version]($style) "
+style = "bold blue"
+detect_files = ["CMakeLists.txt"]
+
+[docker_context]
+symbol = " "
+format = "via [$symbol$context]($style) "
+style = "bold blue"
+only_with_files = true
+
+[package]
+symbol = "📦 "
+format = "[$symbol$version]($style) "
+style = "bold 208"
+display_private = false
+
+[cmd_duration]
+min_time = 2_000
+format = "took [$duration]($style) "
+style = "bold yellow"
+show_milliseconds = false
+
+[jobs]
+symbol = "✦"
+number_threshold = 1
+symbol_threshold = 1
+format = "[$symbol$number]($style) "
+style = "bold blue"
+
+[status]
+disabled = false
+format = '[\[$symbol$status\]]($style) '
+symbol = "✖"
+style = "bold red"
+
+[battery]
+full_symbol = "🔋"
+charging_symbol = "⚡"
+discharging_symbol = "💀"
+disabled = false
+
+[[battery.display]]
+threshold = 15
+style = "bold red"
+
+[[battery.display]]
+threshold = 50
+style = "bold yellow"
+
+[memory_usage]
+disabled = false
+threshold = 75
+symbol = "🐏 "
+style = "bold dimmed white"
+format = "[$symbol$ram]($style) "
+
+[container]
+format = '[$symbol \[$name\]]($style) '
+style = "red bold dimmed"
+symbol = "⬢"
+
+# Optional modules (disabled by default)
+[time]
+disabled = true
+format = 'at [$time]($style) '
+style = "bold white"
+
+[kubernetes]
+disabled = true
+
+[terraform]
+disabled = true

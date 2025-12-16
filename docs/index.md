@@ -2,6 +2,7 @@
 
 This is a small, browsable site for the most commonly referenced notes.
 
-- [Pacman + yay helpers](pacman-yay.md)
+- [Editors](editors.md)
+- [Tips & Tricks](tips-tricks.md)
 
 More pages will be added over time as the setup evolves.

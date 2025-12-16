@@ -51,4 +51,5 @@ plugins:
 
 nav:
   - Home: index.md
-  - Pacman + yay: pacman-yay.md
+  - Editors: editors.md
+  - Tips & Tricks: tips-tricks.md
