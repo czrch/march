@@ -24,7 +24,6 @@ typeset -gU path PATH
 path=(
   "$HOME/.local/bin"
   "$HOME/bin"
-  "$HOME/.cargo/bin"  # Rust binaries
   $path
 )
 
@@ -190,6 +189,7 @@ zinit wait lucid light-mode for \
     zsh-users/zsh-history-substring-search \
     hlissner/zsh-autopair \
     Aloxaf/fzf-tab \
+    changyuheng/zsh-interactive-cd \
   atinit"zicompinit; zicdreplay" \
     zdharma-continuum/fast-syntax-highlighting
 
@@ -204,7 +204,8 @@ zinit wait lucid for \
     MichaelAquilina/zsh-you-should-use \
   nocompile \
     OMZP::sudo \
-    OMZP::colored-man-pages
+    OMZP::colored-man-pages \
+    OMZP::git-extras
 
 # Docker & Podman completions
 if command -v docker >/dev/null; then
@@ -246,17 +247,19 @@ fi
 export PNPM_HOME="$HOME/.local/share/pnpm"
 path=("$PNPM_HOME" $path)
 
-# === NVM (FIXED LAZY LOAD) ===
-# Lazy-load NVM only when you actually use node/npm/npx/nvm
-# This provides ~200ms+ faster shell startup
+# === NVM (ENHANCED LAZY LOAD) ===
+# Lazy-load NVM only when you actually use node/npm/npx/nvm or globally installed packages
+# This provides ~200ms+ faster shell startup while maintaining access to global packages
 if [[ -r /usr/share/nvm/init-nvm.sh ]]; then
   _nvm_loaded=0
+  _nvm_global_packages=()
+  
   _nvm_load() {
     # Return early if already loaded
     (( _nvm_loaded )) && return 0
     
     # Remove wrapper functions to allow real nvm function to take over
-    unset -f nvm node npm npx 2>/dev/null
+    unset -f nvm node npm npx ${_nvm_global_packages[@]} 2>/dev/null
     
     # Load NVM (defines nvm as a shell function)
     source /usr/share/nvm/init-nvm.sh
@@ -269,9 +272,64 @@ if [[ -r /usr/share/nvm/init-nvm.sh ]]; then
   node() { _nvm_load; node "$@"; }
   npm()  { _nvm_load; npm  "$@"; }
   npx()  { _nvm_load; npx  "$@"; }
+  
+  # Scan for globally installed npm packages and create lazy-load wrappers
+  # This allows global packages to work immediately without manually loading NVM first
+  if [[ -d "$HOME/.nvm/versions/node" ]]; then
+    # Find the current/default node version's global bin directory
+    local nvm_current_bin=""
+    
+    # Try to find default or current version
+    if [[ -L "$HOME/.nvm/versions/node/default" ]]; then
+      nvm_current_bin="$HOME/.nvm/versions/node/default/bin"
+    elif [[ -d "$HOME/.nvm/versions/node/current" ]]; then
+      nvm_current_bin="$HOME/.nvm/versions/node/current/bin"
+    else
+      # Find most recent version
+      nvm_current_bin=$(find "$HOME/.nvm/versions/node" -maxdepth 2 -type d -name "bin" 2>/dev/null | sort -V | tail -1)
+    fi
+    
+    # Create wrapper functions for global npm packages
+    if [[ -n "$nvm_current_bin" && -d "$nvm_current_bin" ]]; then
+      for bin_file in "$nvm_current_bin"/*; do
+        if [[ -f "$bin_file" && -x "$bin_file" ]]; then
+          local cmd_name=$(basename "$bin_file")
+          # Skip standard node/npm/npx commands (already wrapped above)
+          if [[ "$cmd_name" != "node" && "$cmd_name" != "npm" && "$cmd_name" != "npx" && "$cmd_name" != "corepack" ]]; then
+            _nvm_global_packages+=("$cmd_name")
+            # Create wrapper function dynamically
+            eval "${cmd_name}() { _nvm_load; command ${cmd_name} \"\$@\"; }"
+          fi
+        fi
+      done
+    fi
+  fi
+  
+  # Scan for globally installed pnpm packages and create lazy-load wrappers
+  if [[ -d "$PNPM_HOME" ]]; then
+    for bin_file in "$PNPM_HOME"/*; do
+      if [[ -f "$bin_file" && -x "$bin_file" ]]; then
+        local cmd_name=$(basename "$bin_file")
+        # Skip pnpm itself and already wrapped commands
+        if [[ "$cmd_name" != "pnpm" && "$cmd_name" != "pnpx" && ! " ${_nvm_global_packages[@]} " =~ " ${cmd_name} " ]]; then
+          _nvm_global_packages+=("$cmd_name")
+          # Create wrapper function dynamically
+          eval "${cmd_name}() { _nvm_load; command ${cmd_name} \"\$@\"; }"
+        fi
+      fi
+    done
+  fi
 fi
 
 # === Python ===
+# UV (fast Python package manager) integration
+if command -v uv >/dev/null; then
+  export UV_CACHE_DIR="$XDG_CACHE_HOME/uv"
+  export UV_PYTHON_PREFERENCE="managed"
+  # UV completions
+  eval "$(uv generate-shell-completion zsh)"
+fi
+
 # Pyenv integration if installed
 if command -v pyenv >/dev/null; then
   export PYENV_ROOT="$HOME/.pyenv"
@@ -279,7 +337,7 @@ if command -v pyenv >/dev/null; then
   eval "$(pyenv init -)"
 fi
 
-# Auto-activate Python venvs on directory change
+# Auto-activate Python venvs on directory change (supports UV and standard venvs)
 autoload -U add-zsh-hook
 _venv_auto_activate() {
   # Deactivate current venv if we're leaving its directory
@@ -293,6 +351,7 @@ _venv_auto_activate() {
   fi
   
   # Activate venv if present in current directory
+  # Check for UV-managed venv first, then standard venvs
   if [[ -f ".venv/bin/activate" ]]; then
     source .venv/bin/activate 2>/dev/null
   elif [[ -f "venv/bin/activate" ]]; then
@@ -301,9 +360,6 @@ _venv_auto_activate() {
 }
 add-zsh-hook chpwd _venv_auto_activate
 _venv_auto_activate  # Check on shell start
-
-# === Rust ===
-# Cargo is already in PATH from line 24
 
 # -----------------------------------------------------------------------------
 # 8) Container Tools (Docker/Podman)
@@ -352,15 +408,13 @@ alias gl='git pull'
 alias gd='git diff'
 alias gds='git diff --staged'
 alias glog='git log --oneline --graph --decorate --all'
-
-# Rust/Cargo shortcuts
-alias cb='cargo build'
-alias cr='cargo run'
-alias ct='cargo test'
-alias cc='cargo check'
-alias cw='cargo watch'
-alias cbr='cargo build --release'
-alias crr='cargo run --release'
+alias gca='git commit --amend'
+alias gcane='git commit --amend --no-edit'
+alias grb='git rebase'
+alias grbi='git rebase -i'
+alias gst='git stash'
+alias gstp='git stash pop'
+alias gstl='git stash list'
 
 # Python shortcuts
 alias py='python'
@@ -370,6 +424,20 @@ alias va='source .venv/bin/activate || source venv/bin/activate'
 alias vd='deactivate'
 alias pi='pip install'
 alias pir='pip install -r requirements.txt'
+
+# UV (Python package manager) shortcuts
+alias uvs='uv sync'
+alias uvi='uv init'
+alias uvr='uv run'
+alias uva='uv add'
+alias uvad='uv add --dev'
+alias uvl='uv lock'
+alias uvt='uv tool install'
+alias uvtr='uv tool run'
+alias uvp='uv pip'
+alias uvpi='uv pip install'
+alias uvpc='uv pip compile'
+alias uvps='uv pip sync'
 
 # Node/NPM shortcuts
 alias ni='npm install'
@@ -400,11 +468,6 @@ alias cp='cp -i'
 command -v gh >/dev/null && eval "$(gh completion -s zsh)"
 command -v kubectl >/dev/null && source <(kubectl completion zsh)
 command -v helm >/dev/null && source <(helm completion zsh)
-
-# Cargo completions (if not auto-installed)
-if command -v rustup >/dev/null && [[ ! -f "$HOME/.local/share/zsh/site-functions/_cargo" ]]; then
-  rustup completions zsh cargo > "$HOME/.local/share/zsh/site-functions/_cargo" 2>/dev/null
-fi
 
 # -----------------------------------------------------------------------------
 # 11) Useful functions
@@ -623,15 +686,412 @@ venv-create() {
   echo "✅ Virtual environment created and activated: $name"
 }
 
-# Cargo new with common settings
-cnew() {
+# === UV (Python) Functions ===
+
+# UV project initialization with common setup
+uv-init() {
+  local name="${1:-.}"
+  
+  if [[ ! -d "$name" && "$name" != "." ]]; then
+    mkdir -p "$name"
+    cd "$name"
+  fi
+  
+  echo "🚀 Initializing UV project..."
+  uv init
+  uv venv
+  source .venv/bin/activate
+  
+  # Add common dev dependencies
+  echo "📦 Adding common dev dependencies..."
+  uv add --dev ruff pytest pytest-cov
+  
+  echo "✅ UV project initialized and virtual environment activated!"
+  echo "💡 Project location: $(pwd)"
+}
+
+# UV virtual environment creation and activation
+uv-venv() {
+  local python_version="${1:-}"
+  
+  if [[ -n "$python_version" ]]; then
+    echo "🐍 Creating UV venv with Python $python_version..."
+    uv venv --python "$python_version"
+  else
+    echo "🐍 Creating UV venv..."
+    uv venv
+  fi
+  
+  source .venv/bin/activate
+  echo "✅ Virtual environment created and activated!"
+}
+
+# UV sync with helpful output
+uv-sync-verbose() {
+  echo "🔄 Syncing dependencies with UV..."
+  uv sync --all-extras
+  echo "✅ Dependencies synced!"
+}
+
+# Quick UV tool installation
+uvti() {
   if [[ -z "$1" ]]; then
-    echo "Usage: cnew <project-name> [--bin|--lib]"
+    echo "Usage: uvti <tool-name>"
     return 1
   fi
-  cargo new "$@"
-  cd "$1"
-  echo "✅ Created Rust project: $1"
+  echo "📦 Installing tool: $1"
+  uv tool install "$1"
+  echo "✅ Tool installed: $1"
+}
+
+# === Enhanced Development Workflow Functions ===
+
+# Smart project initialization wizard
+dev() {
+  echo "🎯 Development Project Initializer"
+  echo "=================================="
+  echo "1) Python (UV)"
+  echo "2) Python (standard venv)"
+  echo "3) Node.js (npm)"
+  echo "4) Node.js (pnpm)"
+  echo "5) Rust"
+  echo "6) C/C++ (CMake)"
+  echo "=================================="
+  echo -n "Select project type [1-6]: "
+  read choice
+  
+  echo -n "Project name: "
+  read project_name
+  
+  case $choice in
+    1)
+      mkdir -p "$project_name" && cd "$project_name"
+      uv-init "."
+      ;;
+    2)
+      mkdir -p "$project_name" && cd "$project_name"
+      python -m venv .venv
+      source .venv/bin/activate
+      pip install --upgrade pip
+      echo "✅ Python venv created!"
+      ;;
+    3)
+      mkdir -p "$project_name" && cd "$project_name"
+      npm init -y
+      echo "✅ npm project created!"
+      ;;
+    4)
+      mkdir -p "$project_name" && cd "$project_name"
+      pnpm init
+      echo "✅ pnpm project created!"
+      ;;
+    5)
+      cargo new "$project_name"
+      cd "$project_name"
+      echo "✅ Rust project created!"
+      ;;
+    6)
+      mkdir -p "$project_name" && cd "$project_name"
+      cmake-init
+      echo "✅ CMake project created!"
+      ;;
+    *)
+      echo "❌ Invalid choice"
+      return 1
+      ;;
+  esac
+}
+
+# Clean all build artifacts across languages
+clean-all() {
+  echo "🧹 Cleaning build artifacts..."
+  
+  # Python
+  if [[ -d ".venv" ]] || [[ -d "venv" ]] || [[ -d "__pycache__" ]]; then
+    echo "  🐍 Cleaning Python artifacts..."
+    find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null
+    find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null
+    find . -type f -name "*.pyc" -delete 2>/dev/null
+    find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null
+    find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null
+  fi
+  
+  # Node.js
+  if [[ -d "node_modules" ]]; then
+    echo "  📦 Cleaning Node.js artifacts..."
+    rm -rf node_modules dist .next .nuxt
+  fi
+  
+  # C/C++
+  if [[ -d "build" ]]; then
+    echo "  🔨 Cleaning CMake artifacts..."
+    rm -rf build
+  fi
+  
+  echo "✅ Cleanup complete!"
+}
+
+# Smart test runner (detects project type)
+test-all() {
+  echo "🧪 Running tests..."
+  
+  if [[ -f "pyproject.toml" ]] && command -v uv >/dev/null; then
+    echo "  🐍 Running Python tests (UV)..."
+    uv run pytest
+  elif [[ -f "pytest.ini" ]] || [[ -d "tests" ]]; then
+    echo "  🐍 Running Python tests..."
+    pytest
+  elif [[ -f "package.json" ]]; then
+    echo "  📦 Running Node.js tests..."
+    if [[ -f "pnpm-lock.yaml" ]]; then
+      pnpm test
+    else
+      npm test
+    fi
+  elif [[ -f "Cargo.toml" ]]; then
+    echo "  🦀 Running Rust tests..."
+    cargo test
+  else
+    echo "❌ No test configuration found"
+    return 1
+  fi
+}
+
+# Smart dev server launcher
+serve() {
+  local port="${1:-3000}"
+  
+  echo "🚀 Starting development server..."
+  
+  if [[ -f "package.json" ]]; then
+    # Node.js project
+    if [[ -f "pnpm-lock.yaml" ]]; then
+      pnpm dev
+    else
+      npm run dev
+    fi
+  elif [[ -f "pyproject.toml" ]] && command -v uv >/dev/null; then
+    # Python UV project
+    if grep -q "uvicorn\|fastapi" pyproject.toml; then
+      uv run uvicorn main:app --reload --port "$port"
+    elif grep -q "flask" pyproject.toml; then
+      uv run flask run --port "$port"
+    else
+      echo "💡 No web framework detected. Run manually."
+    fi
+  elif [[ -f "manage.py" ]]; then
+    # Django
+    python manage.py runserver "$port"
+  elif [[ -f "index.html" ]]; then
+    # Static HTML
+    python -m http.server "$port"
+  else
+    echo "❌ No development server configuration found"
+    return 1
+  fi
+}
+
+# === Directory Bookmarks System ===
+
+# Bookmark current directory
+mark() {
+  local mark_name="${1:-}"
+  if [[ -z "$mark_name" ]]; then
+    echo "Usage: mark <bookmark-name>"
+    return 1
+  fi
+  
+  local marks_file="$HOME/.config/zsh/marks"
+  mkdir -p "$(dirname "$marks_file")"
+  
+  echo "$mark_name|$PWD" >> "$marks_file"
+  echo "📌 Bookmarked: $PWD as '$mark_name'"
+}
+
+# Jump to bookmark
+jump() {
+  local marks_file="$HOME/.config/zsh/marks"
+  
+  if [[ ! -f "$marks_file" ]]; then
+    echo "❌ No bookmarks found. Use 'mark <name>' to create one."
+    return 1
+  fi
+  
+  local selection=$(cat "$marks_file" | fzf --height=40% --preview 'echo {2}' --delimiter='|' --with-nth=1)
+  if [[ -n "$selection" ]]; then
+    local path=$(echo "$selection" | cut -d'|' -f2)
+    cd "$path"
+  fi
+}
+
+# List all bookmarks
+marks() {
+  local marks_file="$HOME/.config/zsh/marks"
+  
+  if [[ ! -f "$marks_file" ]]; then
+    echo "📌 No bookmarks yet. Use 'mark <name>' to create one."
+    return
+  fi
+  
+  echo "📌 Saved Bookmarks:"
+  cat "$marks_file" | awk -F'|' '{printf "  %-20s -> %s\n", $1, $2}'
+}
+
+# Delete a bookmark
+unmark() {
+  local marks_file="$HOME/.config/zsh/marks"
+  
+  if [[ ! -f "$marks_file" ]]; then
+    echo "❌ No bookmarks found."
+    return 1
+  fi
+  
+  local selection=$(cat "$marks_file" | fzf --height=40% --delimiter='|' --with-nth=1)
+  if [[ -n "$selection" ]]; then
+    local mark_name=$(echo "$selection" | cut -d'|' -f1)
+    grep -v "^$mark_name|" "$marks_file" > "${marks_file}.tmp"
+    mv "${marks_file}.tmp" "$marks_file"
+    echo "🗑️  Removed bookmark: $mark_name"
+  fi
+}
+
+# Quick project directory jumper
+proj() {
+  local projects_dir="${PROJECTS_DIR:-$HOME/projects}"
+  
+  if [[ ! -d "$projects_dir" ]]; then
+    echo "💡 Set PROJECTS_DIR environment variable or create ~/projects"
+    return 1
+  fi
+  
+  local project=$(fd -t d -d 2 . "$projects_dir" | fzf --height=40% --preview 'eza --tree --level=2 --color=always {}')
+  [[ -n "$project" ]] && cd "$project"
+}
+
+# === Enhanced Git Functions ===
+
+# Git add and commit in one go
+gac() {
+  if [[ -z "$1" ]]; then
+    echo "Usage: gac <commit-message>"
+    return 1
+  fi
+  git add -A
+  git commit -m "$1"
+}
+
+# Conventional commit helper
+gcm() {
+  echo "📝 Conventional Commit Helper"
+  echo "============================="
+  echo "1) feat:     New feature"
+  echo "2) fix:      Bug fix"
+  echo "3) docs:     Documentation"
+  echo "4) style:    Formatting"
+  echo "5) refactor: Code restructuring"
+  echo "6) test:     Add tests"
+  echo "7) chore:    Maintenance"
+  echo "8) perf:     Performance"
+  echo "============================="
+  echo -n "Select type [1-8]: "
+  read choice
+  
+  local prefix=""
+  case $choice in
+    1) prefix="feat" ;;
+    2) prefix="fix" ;;
+    3) prefix="docs" ;;
+    4) prefix="style" ;;
+    5) prefix="refactor" ;;
+    6) prefix="test" ;;
+    7) prefix="chore" ;;
+    8) prefix="perf" ;;
+    *) echo "❌ Invalid choice"; return 1 ;;
+  esac
+  
+  echo -n "Scope (optional, press enter to skip): "
+  read scope
+  
+  echo -n "Message: "
+  read message
+  
+  local commit_msg="$prefix"
+  [[ -n "$scope" ]] && commit_msg="${commit_msg}(${scope})"
+  commit_msg="${commit_msg}: ${message}"
+  
+  git add -A
+  git commit -m "$commit_msg"
+  echo "✅ Committed: $commit_msg"
+}
+
+# Safe undo last commit
+gundo() {
+  echo "⚠️  This will undo the last commit (keeping changes)"
+  echo -n "Continue? [y/N]: "
+  read confirm
+  
+  if [[ "$confirm" =~ ^[Yy]$ ]]; then
+    git reset --soft HEAD~1
+    echo "✅ Last commit undone (changes kept in staging)"
+  else
+    echo "❌ Cancelled"
+  fi
+}
+
+# Clean merged branches
+gclean() {
+  echo "🧹 Cleaning merged branches..."
+  git branch --merged | grep -v "\*\|main\|master\|develop" | xargs -n 1 git branch -d
+  echo "✅ Merged branches cleaned!"
+}
+
+# === System Information Functions ===
+
+# Colorful system info
+sysinfo() {
+  echo "╔════════════════════════════════════════╗"
+  echo "║        💻 System Information          ║"
+  echo "╚════════════════════════════════════════╝"
+  echo ""
+  echo "🖥️  OS:        $(uname -sr)"
+  echo "🏠 Hostname:  $(hostname)"
+  echo "👤 User:      $USER"
+  echo "🐚 Shell:     $SHELL"
+  echo "⏰ Uptime:    $(uptime -p 2>/dev/null || uptime)"
+  echo "💾 Memory:    $(free -h | awk '/^Mem:/ {printf "%s / %s (%.1f%%)", $3, $2, $3/$2*100}')"
+  
+  # Disk info - use duf if available, otherwise fall back to df
+  if command -v duf >/dev/null; then
+    local disk_info=$(duf / --output mountpoint,size,used,usage --hide-fs tmpfs,devtmpfs 2>/dev/null | awk 'NR==2 {printf "%s / %s (%s)", $3, $2, $4}')
+    echo "💽 Disk:      ${disk_info:-N/A}"
+  else
+    echo "💽 Disk:      $(command df -h / 2>/dev/null | awk 'NR==2 {printf "%s / %s (%s)", $3, $2, $5}')"
+  fi
+  
+  echo "🔋 Load Avg:  $(uptime | awk -F'load average:' '{print $2}')"
+  echo ""
+}
+
+# Terminal weather
+weather() {
+  local location="${1:-}"
+  curl -s "wttr.in/${location}?format=v2"
+}
+
+# Enhanced network info
+myip() {
+  echo "╔════════════════════════════════════════╗"
+  echo "║        🌐 Network Information         ║"
+  echo "╚════════════════════════════════════════╝"
+  echo ""
+  echo "🌍 Public IP:   $(curl -s ifconfig.me)"
+  echo "🏠 Private IP:  $(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v 127.0.0.1 | head -1)"
+  echo "📡 Gateway:     $(ip route | grep default | awk '{print $3}')"
+  echo "🔌 Interface:   $(ip route | grep default | awk '{print $5}')"
+  echo ""
+  echo "🌐 DNS Servers:"
+  grep "nameserver" /etc/resolv.conf | awk '{print "   "$2}'
+  echo ""
 }
 
 # === System Functions ===
@@ -644,23 +1104,9 @@ update-all() {
   echo "\n🔄 Updating Zinit plugins..."
   zinit self-update && zinit update --parallel
   
-  if command -v cargo >/dev/null; then
-    echo "\n🔄 Updating Rust tools..."
-    if ! command -v cargo-install-update >/dev/null; then
-      echo "💡 Installing cargo-update..."
-      cargo install cargo-update
-    fi
-    cargo install-update -a
-  fi
-  
   if command -v pnpm >/dev/null; then
     echo "\n🔄 Updating global pnpm packages..."
     pnpm update -g
-  fi
-  
-  if command -v rustup >/dev/null; then
-    echo "\n🔄 Updating Rust toolchain..."
-    rustup update
   fi
   
   echo "\n✅ All updates complete!"
