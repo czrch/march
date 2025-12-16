@@ -27,5 +27,6 @@
     "material-icon-theme.activeIconPack": "react_redux",
     "window.customTitleBarVisibility": "windowed",
     "window.menuBarVisibility": "compact",
-    "workbench.secondarySideBar.showLabels": false
+    "workbench.secondarySideBar.showLabels": false,
+    "svelte.enable-ts-plugin": true
 }

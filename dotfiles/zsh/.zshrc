@@ -1120,6 +1120,33 @@ gclean() {
   echo "✅ Merged branches cleaned!"
 }
 
+# === System Information Functions ===
+
+# Colorful system info
+sysinfo() {
+  echo "╔════════════════════════════════════════╗"
+  echo "║        💻 System Information          ║"
+  echo "╚════════════════════════════════════════╝"
+  echo ""
+  echo "🖥️  OS:        $(uname -sr)"
+  echo "🏠 Hostname:  $(hostname)"
+  echo "👤 User:      $USER"
+  echo "🐚 Shell:     $SHELL"
+  echo "⏰ Uptime:    $(uptime -p 2>/dev/null || uptime)"
+  echo "💾 Memory:    $(free -h | awk '/^Mem:/ {printf "%s / %s (%.1f%%)", $3, $2, $3/$2*100}')"
+  
+  # Disk info - use duf if available, otherwise fall back to df
+  if command -v duf >/dev/null; then
+    local disk_info=$(duf / --output mountpoint,size,used,usage --hide-fs tmpfs,devtmpfs 2>/dev/null | awk 'NR==2 {printf "%s / %s (%s)", $3, $2, $4}')
+    echo "💽 Disk:      ${disk_info:-N/A}"
+  else
+    echo "💽 Disk:      $(command df -h / 2>/dev/null | awk 'NR==2 {printf "%s / %s (%s)", $3, $2, $5}')"
+  fi
+  
+  echo "🔋 Load Avg:  $(uptime | awk -F'load average:' '{print $2}')"
+  echo ""
+}
+
 # Terminal weather
 weather() {
   local location="${1:-}"
