@@ -52,4 +52,3 @@ plugins:
 nav:
   - Home: index.md
   - Editors: editors.md
-  - Tips & Tricks: tips-tricks.md
