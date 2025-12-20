@@ -16,15 +16,15 @@ help:
 	@echo "Dotfiles:"
 	@echo "  make dotfiles       Apply repo dotfiles to ~/ (interactive)"
 	@echo "  make dotfiles-pull  Capture ~/ dotfiles to repo"
-	@echo "  make dotfiles-check Check for drift between repo and ~/"
+	@echo "  make dotfiles-diff  Check for drift between repo and ~/"
 	@echo ""
 	@echo "Packages:"
-	@echo "  make export         Export current packages + services to state/"
 	@echo "  make packages       Install packages from state/"
+	@echo "  make packages-pull  Export current packages + services to state/"
+	@echo "  make packages-diff  Compare current packages + services to state/"
 	@echo ""
 	@echo "Docs:"
 	@echo "  make docs           Serve MkDocs site locally"
-	@echo "  make docs-build     Build static site"
 	@echo ""
 	@echo "Options:"
 	@echo "  DRY_RUN=1           Show what would be done"
@@ -36,10 +36,10 @@ help:
 	@echo "Examples:"
 	@echo "  make dotfiles YES=1"
 	@echo "  make packages DRY_RUN=1"
-	@echo "  make export"
+	@echo "  make packages-pull"
 
 .PHONY: setup
-setup: export dotfiles
+setup: packages-pull dotfiles
 
 .PHONY: dotfiles
 dotfiles:
@@ -49,13 +49,24 @@ dotfiles:
 dotfiles-pull:
 	$(ROOT_DIR)/scripts/dotfiles.sh --pull $(if $(YES),--yes) $(if $(DRY_RUN),--dry-run)
 
-.PHONY: dotfiles-check
-dotfiles-check:
+.PHONY: dotfiles-diff
+dotfiles-diff:
 	$(ROOT_DIR)/scripts/dotfiles.sh --push --check
 
-.PHONY: export
-export:
+.PHONY: packages-pull
+packages-pull:
 	$(ROOT_DIR)/scripts/packages.sh export
+
+.PHONY: packages-diff
+packages-diff:
+	@tmp_dir="$$(mktemp -d)"; \
+	trap 'rm -rf "$$tmp_dir"' EXIT; \
+	$(ROOT_DIR)/scripts/packages.sh export --state-dir "$$tmp_dir"; \
+	if [ -d "$(STATE_DIR)" ]; then \
+	  diff -ru "$(STATE_DIR)" "$$tmp_dir"; \
+	else \
+	  diff -ru /dev/null "$$tmp_dir"; \
+	fi
 
 .PHONY: packages
 packages:
@@ -68,11 +79,6 @@ docs: docs-serve
 docs-serve:
 	$(ROOT_DIR)/scripts/docs.sh sync
 	$(ROOT_DIR)/scripts/docs.sh serve
-
-.PHONY: docs-build
-docs-build:
-	$(ROOT_DIR)/scripts/docs.sh sync
-	$(ROOT_DIR)/scripts/docs.sh build
 
 .PHONY: clean
 clean:

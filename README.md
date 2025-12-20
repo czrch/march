@@ -9,7 +9,7 @@ My Arch setup notebook + dotfiles stash.
 
 ```bash
 make dotfiles-push
-make export
+make packages-pull
 make packages
 ```
 
