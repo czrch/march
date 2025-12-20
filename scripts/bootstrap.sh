@@ -17,9 +17,13 @@ Commands:
    packages   Install packages from `state/` (delegates to packages.sh install)
    export     Export current system state into state/ (delegates to packages.sh export)
 
-Options:
-  --dry-run  Supported by dotfiles/packages (passes through).
-  --yes      Supported by dotfiles (passes through).
+Options (passed through to underlying scripts):
+  --dry-run           Supported by dotfiles/packages.
+  --yes               Supported by dotfiles.
+  --state-dir DIR     Supported by packages/export.
+  --noconfirm         Supported by packages.
+  --no-aur            Supported by packages.
+  --aur-helper NAME   Supported by packages.
 
 Examples:
   ./scripts/bootstrap.sh dotfiles
@@ -60,7 +64,7 @@ case "$command" in
        usage
        exit 0
      fi
-     exec "$ROOT_DIR/scripts/packages.sh" export
+     exec "$ROOT_DIR/scripts/packages.sh" export "$@"
      ;;
   *)
     echo "Unknown command: $command" >&2

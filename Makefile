@@ -28,7 +28,7 @@ help:
 	@echo ""
 	@echo "Options:"
 	@echo "  DRY_RUN=1           Show what would be done"
-	@echo "  YES=1               Skip confirmations (default for dotfiles in make)"
+	@echo "  YES=1               Skip confirmations"
 	@echo "  NOCONFIRM=1         Skip pacman confirmations"
 	@echo "  NO_AUR=1            Skip AUR packages"
 	@echo "  AUR_HELPER=paru     Use paru instead of yay"
@@ -43,11 +43,11 @@ setup: export dotfiles
 
 .PHONY: dotfiles
 dotfiles:
-	$(ROOT_DIR)/scripts/dotfiles.sh --push --yes $(if $(DRY_RUN),--dry-run)
+	$(ROOT_DIR)/scripts/dotfiles.sh --push $(if $(YES),--yes) $(if $(DRY_RUN),--dry-run)
 
 .PHONY: dotfiles-pull
 dotfiles-pull:
-	$(ROOT_DIR)/scripts/dotfiles.sh --pull --yes $(if $(DRY_RUN),--dry-run)
+	$(ROOT_DIR)/scripts/dotfiles.sh --pull $(if $(YES),--yes) $(if $(DRY_RUN),--dry-run)
 
 .PHONY: dotfiles-check
 dotfiles-check:

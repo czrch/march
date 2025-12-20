@@ -48,6 +48,10 @@ Side effects:
    - Directory entries are synced recursively (extra destination files are left untouched).
    - Uses cp -a (files) and rsync -a (directories) to preserve permissions and symlinks.
 
+Manifest format:
+   - Tab-separated: <repo_rel>\t<home_rel>
+   - Tabs allow paths with spaces.
+
 Examples:
    ./scripts/dotfiles.sh --pull
    ./scripts/dotfiles.sh --push
@@ -56,6 +60,28 @@ Examples:
    ./scripts/dotfiles.sh --list
 EOF
 }
+
+pretty_path() {
+  local path="$1"
+  if [[ "$path" == "$DOTFILES_DIR"* ]]; then
+    printf './dotfiles%s' "${path#"$DOTFILES_DIR"}"
+    return 0
+  fi
+  if [[ "$path" == "$ROOT_DIR"* ]]; then
+    printf '.%s' "${path#"$ROOT_DIR"}"
+    return 0
+  fi
+  if [[ "$path" == "$HOME"* ]]; then
+    printf '~%s' "${path#"$HOME"}"
+    return 0
+  fi
+  printf '%s' "$path"
+}
+
+status_ok() { color_green "[OK] $1"; }
+status_info() { color_blue "[..] $1"; }
+status_warn() { color_yellow "[!!] $1"; }
+status_err() { color_red "[XX] $1"; }
 
 MODE=""
 MANIFEST="$DEFAULT_MANIFEST"
@@ -207,6 +233,14 @@ paths_match() {
     [[ -d "$dst" ]] || return 1
     # For directory entries, we treat the source as authoritative but do not
     # consider extra files in the destination to be drift.
+    while IFS= read -r -d '' src_dir; do
+      if [[ "$src_dir" == "$src" ]]; then
+        continue
+      fi
+      local rel="${src_dir#"$src"/}"
+      local dst_dir="$dst/$rel"
+      [[ -d "$dst_dir" ]] || return 1
+    done < <(find "$src" -type d -print0)
     while IFS= read -r -d '' src_item; do
       local rel="${src_item#"$src"/}"
       local dst_item="$dst/$rel"
@@ -249,7 +283,10 @@ confirm_sync() {
 
   local reply=""
   # Explicitly read from terminal and write prompt to stderr
-  read -r -p "You are about to $verb $kind: $src -> $dst. Continue? [y/N] " reply </dev/tty >/dev/tty 2>&1
+  local src_print dst_print
+  src_print="$(pretty_path "$src")"
+  dst_print="$(pretty_path "$dst")"
+  read -r -p "You are about to $verb $kind: $src_print -> $dst_print. Continue? [y/N] " reply </dev/tty >/dev/tty 2>&1
   case "$reply" in
     y|Y|yes|YES) return 0 ;;
     *) return 1 ;;
@@ -275,41 +312,41 @@ sync_entry() {
   fi
 
   if [[ ! -e "$src" && ! -L "$src" ]]; then
-    color_yellow "Skip missing source: $src"
+    status_warn "Skip missing source: $(pretty_path "$src")"
     return 0
   fi
 
   if [[ "$CHECK" -eq 1 ]]; then
     if [[ ! -e "$dst" && ! -L "$dst" ]]; then
-      color_red "MISSING_DST $dst"
+      status_err "MISSING: $(pretty_path "$dst")"
       return 1
     fi
     if paths_match "$src" "$dst"; then
-      color_green "OK $dst"
+      status_ok "$(pretty_path "$dst")"
       return 0
     fi
-    color_yellow "DIFF $dst"
+    status_warn "DIFF: $(pretty_path "$dst")"
     return 1
   fi
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
     if [[ ! -e "$dst" && ! -L "$dst" ]]; then
-      color_blue "Would copy $src -> $dst"
+      status_info "Would copy $(pretty_path "$src") -> $(pretty_path "$dst")"
     elif ! paths_match "$src" "$dst"; then
-      color_blue "Would update $dst from $src"
+      status_info "Would update $(pretty_path "$dst") from $(pretty_path "$src")"
     fi
     return 0
   fi
 
   if [[ -e "$dst" || -L "$dst" ]]; then
     if paths_match "$src" "$dst"; then
-      color_green "Up-to-date: $dst"
+      status_ok "Up-to-date: $(pretty_path "$dst")"
       return 0
     fi
   fi
 
   if ! confirm_sync "$src" "$dst"; then
-    color_yellow "Skipped by user: $dst"
+    status_warn "Skipped: $(pretty_path "$dst")"
     return 0
   fi
 
@@ -320,27 +357,27 @@ sync_entry() {
   mkdir -p "$(dirname "$dst")"
   if [[ -d "$src" ]]; then
     if [[ -e "$dst" && ! -d "$dst" ]]; then
-      color_red "Destination exists but is not a directory: $dst"
+      status_err "Destination exists but is not a directory: $(pretty_path "$dst")"
       return 1
     fi
     if ! have_rsync; then
-      color_red "rsync is required to sync directory entries (missing on PATH)."
+      status_err "rsync is required to sync directory entries (missing on PATH)."
       return 1
     fi
     mkdir -p "$dst"
     rsync -a --exclude='.gitkeep' -- "$src/" "$dst/"
-    color_green "Synced dir $src -> $dst"
-    ((synced_count++))
+    status_ok "Synced dir $(pretty_path "$src") -> $(pretty_path "$dst")"
+    ((++synced_count))
     return 0
   fi
 
   if [[ -d "$dst" ]]; then
-    color_red "Destination exists but is a directory: $dst"
+    status_err "Destination exists but is a directory: $(pretty_path "$dst")"
     return 1
   fi
   cp -a -- "$src" "$dst"
-  color_green "Synced $src -> $dst"
-  ((synced_count++))
+  status_ok "Synced $(pretty_path "$src") -> $(pretty_path "$dst")"
+  ((++synced_count))
 }
 
 had_diff=0
@@ -352,7 +389,7 @@ synced_count=0
 while IFS= read -r line; do
   [[ -z "$line" ]] && continue
   [[ "$line" =~ ^[[:space:]]*# ]] && continue
-  ((total_entries++))
+  ((++total_entries))
 done < "$MANIFEST"
 
 while IFS= read -r line; do
@@ -361,15 +398,23 @@ while IFS= read -r line; do
 
   repo_rel=""
   home_rel=""
-  read -r repo_rel home_rel _rest <<<"$line"
+  if [[ "$line" == *$'\t'* ]]; then
+    IFS=$'\t' read -r repo_rel home_rel _rest <<<"$line"
+  else
+    read -r repo_rel home_rel _rest <<<"$line"
+  fi
   if [[ -z "$repo_rel" || -z "$home_rel" ]]; then
     color_red "Invalid manifest line (expected: <repo_rel> <home_rel>): $line"
     exit 1
   fi
 
-  ((processed_entries++))
+  ((++processed_entries))
   if [[ "$DRY_RUN" -eq 0 && "$CHECK" -eq 0 ]]; then
-    echo "Processing $processed_entries/$total_entries: $home_rel"
+    display_rel="$home_rel"
+    if [[ "$display_rel" != /* ]]; then
+      display_rel="$HOME/$display_rel"
+    fi
+    status_info "Processing $processed_entries/$total_entries: $(pretty_path "$display_rel")"
   fi
 
   if ! sync_entry "$repo_rel" "$home_rel"; then
@@ -378,9 +423,9 @@ while IFS= read -r line; do
 done < "$MANIFEST"
 
 if [[ "$DRY_RUN" -eq 0 && "$CHECK" -eq 0 ]]; then
-  color_green "Sync complete: $processed_entries entries processed."
+  status_ok "Sync complete: $processed_entries entries processed."
   if [[ $synced_count -eq 0 ]]; then
-    color_yellow "No files were synced (all up-to-date, sources missing, or skipped by user)."
+    status_warn "No files were synced (all up-to-date, sources missing, or skipped by user)."
   fi
 fi
 
