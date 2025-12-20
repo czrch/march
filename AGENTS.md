@@ -22,11 +22,13 @@ This repo is meant to be a lightweight, version‑controlled reference for:
 ## Usage
 
 - Export current system state into `state/`:
-  - `./scripts/export.sh all`
+  - `./scripts/packages.sh export`
+- Install packages from exported state:
+  - `./scripts/packages.sh install`
 - Sync tracked dotfiles from `$HOME` into the repo:
-  - `./scripts/sync-dotfiles.sh --pull`
+  - `./scripts/dotfiles.sh --pull`
 - Apply dotfiles from the repo into `$HOME`:
-  - `./scripts/sync-dotfiles.sh --push`
+  - `./scripts/dotfiles.sh --push`
 
 - Work on the docs site locally:
   - `./scripts/docs.sh sync`

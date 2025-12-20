@@ -7,40 +7,53 @@ readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly DOTFILES_DIR="$ROOT_DIR/dotfiles"
 readonly DEFAULT_MANIFEST="$DOTFILES_DIR/manifest.tsv"
 
-usage() {
-  cat <<EOF
-Usage: $(basename "$0") [--push|--pull] [options] [-h|--help]
+# Color output functions
+if [[ -t 1 ]]; then
+  color_red() { printf '\033[31m%s\033[0m\n' "$1"; }
+  color_green() { printf '\033[32m%s\033[0m\n' "$1"; }
+  color_yellow() { printf '\033[33m%s\033[0m\n' "$1"; }
+  color_blue() { printf '\033[34m%s\033[0m\n' "$1"; }
+else
+  color_red() { printf '%s\n' "$1"; }
+  color_green() { printf '%s\n' "$1"; }
+  color_yellow() { printf '%s\n' "$1"; }
+  color_blue() { printf '%s\n' "$1"; }
+fi
 
-Sync tracked dotfiles between this repo and \$HOME.
+usage() {
+   cat <<'EOF'
+Usage: dotfiles.sh [--push|--pull] [options] [-h|--help]
+
+Sync tracked dotfiles between this repo and $HOME.
 
 Modes (exactly one required unless using --list):
-  --pull    Copy from \$HOME -> repo (capture current dotfiles into the repo)
-  --push    Copy from repo -> \$HOME (apply repo dotfiles into your home dir)
+   --pull    Copy from $HOME -> repo (capture current dotfiles into the repo)
+   --push    Copy from repo -> $HOME (apply repo dotfiles into your home dir)
 
 Options:
-  --manifest PATH Use a dotfiles manifest (default: $DEFAULT_MANIFEST).
-  --dry-run Show what would change; do not write files.
-  --check   Show drift status and exit non-zero if differences exist.
-  --list    Print the dotfiles manifest and exit (no mode required).
-  --yes     Assume "yes" for all confirmations (non-interactive safe).
-  --backup      Backup destination files before overwriting (default: on for --push).
-  --no-backup   Disable backups.
-  --backup-dir DIR  Where to place backups (default: \$XDG_DATA_HOME/march/backups/<timestamp>).
-  -h, --help Show this help.
+   --manifest PATH Use a dotfiles manifest (default: dotfiles/manifest.tsv).
+   --dry-run Show what would change; do not write files.
+   --check   Show drift status and exit non-zero if differences exist.
+   --list    Print the dotfiles manifest and exit (no mode required).
+   --yes     Assume "yes" for all confirmations (non-interactive safe).
+   --backup      Backup destination files before overwriting (default: on for --push).
+   --no-backup   Disable backups.
+   --backup-dir DIR  Where to place backups (default: $XDG_DATA_HOME/march/backups/<timestamp>).
+   -h, --help Show this help.
 
 Side effects:
-  - Creates destination directories as needed.
-  - Prompts before each change unless --yes is provided.
-  - Overwrites destination files (optionally backed up).
-  - Directory entries are synced recursively (extra destination files are left untouched).
-  - Uses cp -a (files) and rsync -a (directories) to preserve permissions and symlinks.
+   - Creates destination directories as needed.
+   - Prompts before each change unless --yes is provided.
+   - Overwrites destination files (optionally backed up).
+   - Directory entries are synced recursively (extra destination files are left untouched).
+   - Uses cp -a (files) and rsync -a (directories) to preserve permissions and symlinks.
 
 Examples:
-  ./scripts/sync-dotfiles.sh --pull
-  ./scripts/sync-dotfiles.sh --push
-  ./scripts/sync-dotfiles.sh --push --dry-run
-  ./scripts/sync-dotfiles.sh --push --check
-  ./scripts/sync-dotfiles.sh --list
+   ./scripts/dotfiles.sh --pull
+   ./scripts/dotfiles.sh --push
+   ./scripts/dotfiles.sh --push --dry-run
+   ./scripts/dotfiles.sh --push --check
+   ./scripts/dotfiles.sh --list
 EOF
 }
 
@@ -262,41 +275,41 @@ sync_entry() {
   fi
 
   if [[ ! -e "$src" && ! -L "$src" ]]; then
-    echo "Skip missing source: $src"
+    color_yellow "Skip missing source: $src"
     return 0
   fi
 
   if [[ "$CHECK" -eq 1 ]]; then
     if [[ ! -e "$dst" && ! -L "$dst" ]]; then
-      echo "MISSING_DST $dst"
+      color_red "MISSING_DST $dst"
       return 1
     fi
     if paths_match "$src" "$dst"; then
-      echo "OK $dst"
+      color_green "OK $dst"
       return 0
     fi
-    echo "DIFF $dst"
+    color_yellow "DIFF $dst"
     return 1
   fi
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
     if [[ ! -e "$dst" && ! -L "$dst" ]]; then
-      echo "Would copy $src -> $dst"
+      color_blue "Would copy $src -> $dst"
     elif ! paths_match "$src" "$dst"; then
-      echo "Would update $dst from $src"
+      color_blue "Would update $dst from $src"
     fi
     return 0
   fi
 
   if [[ -e "$dst" || -L "$dst" ]]; then
     if paths_match "$src" "$dst"; then
-      echo "Up-to-date: $dst"
+      color_green "Up-to-date: $dst"
       return 0
     fi
   fi
 
   if ! confirm_sync "$src" "$dst"; then
-    echo "Skipped by user: $dst"
+    color_yellow "Skipped by user: $dst"
     return 0
   fi
 
@@ -307,28 +320,41 @@ sync_entry() {
   mkdir -p "$(dirname "$dst")"
   if [[ -d "$src" ]]; then
     if [[ -e "$dst" && ! -d "$dst" ]]; then
-      echo "Destination exists but is not a directory: $dst" >&2
+      color_red "Destination exists but is not a directory: $dst"
       return 1
     fi
     if ! have_rsync; then
-      echo "rsync is required to sync directory entries (missing on PATH)." >&2
+      color_red "rsync is required to sync directory entries (missing on PATH)."
       return 1
     fi
     mkdir -p "$dst"
     rsync -a --exclude='.gitkeep' -- "$src/" "$dst/"
-    echo "Synced dir $src -> $dst"
+    color_green "Synced dir $src -> $dst"
+    ((synced_count++))
     return 0
   fi
 
   if [[ -d "$dst" ]]; then
-    echo "Destination exists but is a directory: $dst" >&2
+    color_red "Destination exists but is a directory: $dst"
     return 1
   fi
   cp -a -- "$src" "$dst"
-  echo "Synced $src -> $dst"
+  color_green "Synced $src -> $dst"
+  ((synced_count++))
 }
 
 had_diff=0
+total_entries=0
+processed_entries=0
+synced_count=0
+
+# Count total entries first
+while IFS= read -r line; do
+  [[ -z "$line" ]] && continue
+  [[ "$line" =~ ^[[:space:]]*# ]] && continue
+  ((total_entries++))
+done < "$MANIFEST"
+
 while IFS= read -r line; do
   [[ -z "$line" ]] && continue
   [[ "$line" =~ ^[[:space:]]*# ]] && continue
@@ -337,14 +363,26 @@ while IFS= read -r line; do
   home_rel=""
   read -r repo_rel home_rel _rest <<<"$line"
   if [[ -z "$repo_rel" || -z "$home_rel" ]]; then
-    echo "Invalid manifest line (expected: <repo_rel> <home_rel>): $line" >&2
+    color_red "Invalid manifest line (expected: <repo_rel> <home_rel>): $line"
     exit 1
+  fi
+
+  ((processed_entries++))
+  if [[ "$DRY_RUN" -eq 0 && "$CHECK" -eq 0 ]]; then
+    echo "Processing $processed_entries/$total_entries: $home_rel"
   fi
 
   if ! sync_entry "$repo_rel" "$home_rel"; then
     had_diff=1
   fi
 done < "$MANIFEST"
+
+if [[ "$DRY_RUN" -eq 0 && "$CHECK" -eq 0 ]]; then
+  color_green "Sync complete: $processed_entries entries processed."
+  if [[ $synced_count -eq 0 ]]; then
+    color_yellow "No files were synced (all up-to-date, sources missing, or skipped by user)."
+  fi
+fi
 
 if [[ "$CHECK" -eq 1 && "$had_diff" -ne 0 ]]; then
   exit 1

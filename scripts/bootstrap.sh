@@ -13,9 +13,9 @@ Usage: bootstrap.sh <command> [options] [-h|--help]
 Convenience entrypoint for setting up this repo on a fresh machine.
 
 Commands:
-  dotfiles   Apply repo dotfiles to $HOME (delegates to sync-dotfiles.sh --push)
-  packages   Install packages from `state/` (delegates to install-packages.sh all)
-  export     Export current system state into state/ (delegates to export.sh all)
+   dotfiles   Apply repo dotfiles to $HOME (delegates to dotfiles.sh --push)
+   packages   Install packages from `state/` (delegates to packages.sh install)
+   export     Export current system state into state/ (delegates to packages.sh export)
 
 Options:
   --dry-run  Supported by dotfiles/packages (passes through).
@@ -42,26 +42,26 @@ command="$1"
 shift
 
 case "$command" in
-  dotfiles)
-    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-      usage
-      exit 0
-    fi
-    exec "$ROOT_DIR/scripts/sync-dotfiles.sh" --push --manifest "$DOTFILES_MANIFEST_DEFAULT" "$@"
-    ;;
-  packages)
-    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-      exec "$ROOT_DIR/scripts/install-packages.sh" --help
-    fi
-    exec "$ROOT_DIR/scripts/install-packages.sh" all "$@"
-    ;;
-  export)
-    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-      usage
-      exit 0
-    fi
-    exec "$ROOT_DIR/scripts/export.sh" all
-    ;;
+   dotfiles)
+     if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+       usage
+       exit 0
+     fi
+     exec "$ROOT_DIR/scripts/dotfiles.sh" --push --manifest "$DOTFILES_MANIFEST_DEFAULT" "$@"
+     ;;
+   packages)
+     if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+       exec "$ROOT_DIR/scripts/packages.sh" --help
+     fi
+     exec "$ROOT_DIR/scripts/packages.sh" install "$@"
+     ;;
+   export)
+     if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+       usage
+       exit 0
+     fi
+     exec "$ROOT_DIR/scripts/packages.sh" export
+     ;;
   *)
     echo "Unknown command: $command" >&2
     usage

@@ -3,31 +3,31 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: install-packages.sh <command> [options] [-h|--help]
+Usage: packages.sh <command> [options] [-h|--help]
 
-Install packages based on files exported into `state/` by `./scripts/export.sh packages`.
+Manage system packages and services for Arch Linux.
 
 Commands:
-  all     Install pacman + AUR packages.
-  pacman  Install repo packages from state/packages/pacman-explicit.txt.
-  aur     Install AUR packages from state/packages/aur-explicit.txt.
+  export     Export current system state (packages + services) to state/
+  install    Install packages from exported state files
 
 Options:
-  --state-dir DIR     Override the repo state dir (default: <repo>/state).
-  --aur-helper NAME   AUR helper to use: yay|paru (default: yay if present, else paru).
-  --no-aur            Skip AUR install (useful with `all`).
-  --dry-run           Print the commands that would run; do not install anything.
-  --noconfirm         Pass --noconfirm to the installer (non-interactive).
+  --state-dir DIR     Override the repo state dir (default: <repo>/state)
+  --aur-helper NAME   AUR helper to use: yay|paru (default: yay if present, else paru)
+  --no-aur            Skip AUR packages during install
+  --dry-run           Show what would be done; do not modify system
+  --noconfirm         Pass --noconfirm to pacman (non-interactive)
+  --help              Show this help
 
-Notes:
-  - `pacman` installs require sudo.
-  - This script does not install an AUR helper for you.
+Requirements:
+  - Arch Linux with pacman installed
+  - systemd with systemctl for service export
+  - AUR helper (yay/paru) for AUR package installation
 
 Examples:
-  ./scripts/export.sh packages
-  ./scripts/install-packages.sh all --dry-run
-  ./scripts/install-packages.sh pacman
-  ./scripts/install-packages.sh aur --aur-helper yay
+  ./scripts/packages.sh export
+  ./scripts/packages.sh install --dry-run
+  ./scripts/packages.sh install --aur-helper paru
 EOF
 }
 
@@ -83,6 +83,36 @@ done
 readonly PACKAGES_DIR="$STATE_DIR/packages"
 readonly PACMAN_FILE="$PACKAGES_DIR/pacman-explicit.txt"
 readonly AUR_FILE="$PACKAGES_DIR/aur-explicit.txt"
+readonly SERVICES_FILE="$STATE_DIR/services-enabled.txt"
+
+export_packages() {
+  if ! command -v pacman >/dev/null 2>&1; then
+    echo "error: pacman not found on PATH" >&2
+    echo "hint: this script is designed for Arch Linux systems with pacman installed" >&2
+    exit 1
+  fi
+  mkdir -p "$PACKAGES_DIR"
+  pacman -Qqen > "$PACMAN_FILE"
+  pacman -Qqem > "$AUR_FILE"
+  echo "Exported packages to:"
+  echo "  $PACMAN_FILE ($(wc -l < "$PACMAN_FILE") packages)"
+  echo "  $AUR_FILE ($(wc -l < "$AUR_FILE") packages)"
+}
+
+export_services() {
+  if ! command -v systemctl >/dev/null 2>&1; then
+    echo "error: systemctl not found on PATH" >&2
+    echo "hint: this script requires systemd" >&2
+    exit 1
+  fi
+  mkdir -p "$STATE_DIR"
+  systemctl list-unit-files --state=enabled --no-legend --no-pager \
+    | awk '{print $1}' \
+    | sed '/^$/d' \
+    | sort -u > "$SERVICES_FILE"
+  echo "Exported services to:"
+  echo "  $SERVICES_FILE ($(wc -l < "$SERVICES_FILE") services)"
+}
 
 read_list_file() {
   local path="$1"
@@ -156,7 +186,8 @@ choose_aur_helper() {
 
 install_pacman() {
   if ! command -v pacman >/dev/null 2>&1; then
-    echo "pacman not found; this is intended for Arch Linux." >&2
+    echo "error: pacman not found on PATH" >&2
+    echo "hint: this script is designed for Arch Linux systems" >&2
     exit 1
   fi
   run_batches 200 "$PACMAN_FILE" sudo pacman -S
@@ -170,11 +201,12 @@ install_aur() {
   local helper
   helper="$(choose_aur_helper)"
   if [[ -z "$helper" ]]; then
-    echo "No AUR helper found. Install yay/paru first, or pass --no-aur." >&2
+    echo "error: no AUR helper found" >&2
+    echo "hint: install yay or paru, or pass --no-aur to skip AUR packages" >&2
     exit 1
   fi
   if [[ "$helper" != "yay" && "$helper" != "paru" ]]; then
-    echo "Unsupported AUR helper: $helper (expected: yay|paru)" >&2
+    echo "error: unsupported AUR helper: $helper (expected: yay|paru)" >&2
     exit 1
   fi
 
@@ -182,14 +214,13 @@ install_aur() {
 }
 
 case "$command" in
-  all)
-    install_pacman
-    install_aur
+  export)
+    export_packages
+    export_services
+    echo "Export complete."
     ;;
-  pacman)
+  install)
     install_pacman
-    ;;
-  aur)
     install_aur
     ;;
   *)
