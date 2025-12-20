@@ -365,7 +365,6 @@ sysinfo() {
 # Completions (guarded to prevent errors)
 # -----------------------------------------------------------------------------
 command -v gh >/dev/null 2>&1 && eval "$(gh completion -s zsh)" 2>/dev/null
-command -v cline >/dev/null 2>&1 && source <(cline completion zsh) 2>/dev/null
 
 # -----------------------------------------------------------------------------
 # Cleanup
