@@ -1,10 +1,10 @@
-# march docs
+# March Reference
 
-This is a small, browsable site for the most commonly referenced notes.
+This is a small, browsable site for tips & tricks, notes, docs and anything else that I think is important.
 
 - [Editors](editors.md)
 
-## yay Package Management
+## Package Management
 
 Quick reference for using [yay](https://github.com/Jguer/yay) — AUR helper that wraps pacman.
 
