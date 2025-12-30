@@ -12,7 +12,10 @@ theme:
     - navigation.tracking
     - navigation.tabs
     - navigation.sections
+    - navigation.expand
     - navigation.top
+    - navigation.prune
+    - navigation.indexes
     - search.highlight
     - search.suggest
     - content.code.copy
@@ -31,9 +34,12 @@ theme:
     code: JetBrains Mono
 
 markdown_extensions:
+  - nl2br
   - admonition
   - attr_list
+  - footnotes
   - md_in_html
+  - tables
   - toc:
       permalink: true
   - pymdownx.details
@@ -42,13 +48,28 @@ markdown_extensions:
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
+  - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.keys
+  - pymdownx.mark
   - pymdownx.tabbed:
       alternate_style: true
 
 plugins:
   - search
+  - callouts
+  - tags
+  - git-revision-date-localized
 
 nav:
-  - Home: index.md
-  - Editors: editors.md
+  - Home:
+    - index.md
+  - Tags: tags.md
+  - Common:
+    - Packages: packages.md
+    - Editors: editors.md
