@@ -10,9 +10,9 @@ add_newline = true
 
 # Single-line format - clean and modern
 format = """
-$username$hostname$directory$git_branch$git_status$git_state\
-$nodejs$python$rust$golang$java$cmake\
-$docker_context$package$cmd_duration$jobs$status
+$username$hostname$sudo$directory${custom.cmake_project_version}$package$git_branch$git_status$git_state\
+$nodejs$deno$python$rust$golang$java$cmake${custom.make}\
+$docker_context$container$battery$cmd_duration$jobs$status
 $character"""
 
 # Simple continuation
@@ -32,7 +32,7 @@ show_always = false  # Only show in SSH sessions
 
 [hostname]
 ssh_only = true  # Only show hostname when connected via SSH
-format = "at [$hostname](bold purple) "
+format = "via [ $hostname](bold purple) "
 disabled = false
 
 [directory]
@@ -44,7 +44,7 @@ format = "in [$path]($style)[$read_only]($read_only_style) "
 home_symbol = "~"
 
 [git_branch]
-symbol = " "
+symbol = " "
 style = "bold purple"
 format = "on [$symbol$branch]($style) "
 
@@ -73,49 +73,70 @@ disabled = true
 
 # Language modules - compact format
 [nodejs]
-symbol = " "
+symbol = " "
 format = "via [$symbol$version]($style) "
 style = "bold green"
 detect_files = ["package.json", ".node-version", ".nvmrc"]
 
 [python]
-symbol = " "
+symbol = " "
 format = 'via [$symbol$version( \($virtualenv\))]($style) '
 style = "bold yellow"
 detect_files = ["requirements.txt", ".python-version", "pyproject.toml", "Pipfile", "setup.py", "tox.ini"]
 
 [rust]
-symbol = " "
+symbol = " "
 format = "via [$symbol$version]($style) "
 style = "bold red"
 detect_files = ["Cargo.toml", "Cargo.lock"]
 
 [golang]
-symbol = " "
+symbol = " "
 format = "via [$symbol$version]($style) "
 style = "bold cyan"
 detect_files = ["go.mod", "go.sum"]
 
 [java]
-symbol = " "
+symbol = " "
 format = "via [$symbol$version]($style) "
 style = "bold red"
 detect_files = ["pom.xml", "build.gradle.kts", "build.gradle"]
 
 [cmake]
-symbol = "△ "
+symbol = " "
 format = "via [$symbol$version]($style) "
 style = "bold blue"
 detect_files = ["CMakeLists.txt"]
 
+[deno]
+symbol = " "
+format = "via [$symbol$version]($style) "
+style = "bold green"
+detect_files = ["deno.json", "deno.jsonc", "deno.lock", "import_map.json"]
+
+[custom.make]
+description = "make"
+command = "true"
+detect_files = ["Makefile", "makefile", "GNUmakefile"]
+format = "via []($style) "
+style = "bold 214"
+
+[custom.cmake_project_version]
+description = "CMake project version (from CMakeLists.txt)"
+detect_files = ["CMakeLists.txt"]
+command = "python3 -c 'import re,sys,pathlib; p=pathlib.Path(\"CMakeLists.txt\"); s=p.read_text(encoding=\"utf-8\", errors=\"ignore\"); s=re.sub(r\"#.*\", \"\", s); m=re.search(r\"\\bproject\\s*\\(.*?\\bVERSION\\s+([0-9]+(?:\\.[0-9]+)*)\", s, flags=re.IGNORECASE|re.DOTALL);\\\nprint(m.group(1)) if m else sys.exit(1)'"
+format = "[$symbol$output]($style) "
+symbol = "󰏗 v"
+style = "bold 208"
+
 [docker_context]
-symbol = " "
+symbol = " "
 format = "via [$symbol$context]($style) "
 style = "bold blue"
 only_with_files = true
 
 [package]
-symbol = "📦 "
+symbol = "󰏗 "
 format = "[$symbol$version]($style) "
 style = "bold 208"
 display_private = false
@@ -146,12 +167,14 @@ discharging_symbol = "💀"
 disabled = false
 
 [[battery.display]]
-threshold = 15
+threshold = 20
 style = "bold red"
 
-[[battery.display]]
-threshold = 50
-style = "bold yellow"
+[sudo]
+disabled = false
+symbol = "󰌾 "
+format = "as [$symbol]($style) "
+style = "bold red"
 
 [memory_usage]
 disabled = false
@@ -163,7 +186,7 @@ format = "[$symbol$ram]($style) "
 [container]
 format = '[$symbol \[$name\]]($style) '
 style = "red bold dimmed"
-symbol = "⬢"
+symbol = ""
 
 # Optional modules (disabled by default)
 [time]
