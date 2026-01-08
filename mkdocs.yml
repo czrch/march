@@ -70,4 +70,5 @@ nav:
     - index.md
     - Packages: packages.md
   - Common:
+    - Terminal: terminal.md
     - Editors: editors.md

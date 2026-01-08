@@ -15,5 +15,5 @@ Desktop Linux is not stable, nor mature, making expirimentation a requirement. T
 
 ## Getting Started
 
-- [Editors](editors.md)
-- [Packages](packages.md)
+- [Editors](editors.md) — Text editors and IDEs
+- [Terminal](terminal.md) — Terminal emulators, shells, and utilities
