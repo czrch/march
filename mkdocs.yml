@@ -63,13 +63,11 @@ markdown_extensions:
 plugins:
   - search
   - callouts
-  - tags
   - git-revision-date-localized
 
 nav:
   - Home:
     - index.md
-  - Tags: tags.md
-  - Common:
     - Packages: packages.md
+  - Common:
     - Editors: editors.md

@@ -1,7 +1,7 @@
 # Welcome to March
 
 > [!important]
-> 🚧 Under Construction
+> This project is under construction!
 
 A browsable collection of important notes, useful tips & tricks plus common packages for daily Arch Linux use.
 

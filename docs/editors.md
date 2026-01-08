@@ -1,35 +1,68 @@
 # Editors
 
-> [!IMPORTANT]
-> Under construction!
+A collection of lightweight and open-source text editors for development and writing.
 
 ## VSCodium
 
-Free and open source VS Code without the Microsoft branding and telemetry.
+VSCodium is a community-driven, MIT-licensed build of VS Code with all the telemetry ripped out and Microsoft branding removed. You get all the power of VS Code with none of the corporate tracking.
+
+| | |
+|---|---|
+| **License** | MIT |
+| **Built on** | Electron |
+| **Use case** | Full-featured code editor, extensions ecosystem |
 
 **Installation:**
 
-- **Binary (faster)**: `yay -S vscodium-bin`
-- **From source**: `yay -S vscodium` (takes longer to build)
+```bash
+# Binary (recommended - installs in minutes)
+yay -S vscodium-bin
 
-Pick the binary version unless you have a reason to build from source.
+# From source (slower, but self-compiled)
+yay -S vscodium
+```
+
+Start with `vscodium-bin` unless you specifically want to build from source. The binary is significantly faster to install and works great out of the box. Open VSX marketplace is pre-configured for extension support.
+
+---
 
 ## Obsidian
 
-Note-taking app that stores everything as plain Markdown files in a local folder. Great for a personal knowledge base.
+Your notes, owned by you. Obsidian stores everything as plain Markdown files in a folder you control—perfect for building a personal knowledge base or wiki. No cloud lock-in, no subscriptions.
+
+| | |
+|---|---|
+| **License** | Proprietary (free for personal use) |
+| **Core idea** | Local-first, your vault, your rules |
+| **Use case** | Note-taking, knowledge management, PKM |
 
 **Installation:**
 
-- **Binary (official)**: `yay -S obsidian-bin`
+```bash
+yay -S obsidian-bin
+```
 
-Pretty straightforward—just grab the binary from the AUR.
+Simple and direct. The binary package includes Electron, so you get everything in one go. All your notes stay in `~/Obsidian` or wherever you choose—no syncing to external servers unless you want to.
+
+---
 
 ## MarkText
 
-Simple and lightweight Markdown editor with a clean interface. Good for quick editing and distraction-free writing.
+A clean and lightweight editor specifically built for Markdown. No frills, no bloat—just you and your text. Great for blog posts, documentation, or focused writing sessions.
+
+| | |
+|---|---|
+| **License** | MIT |
+| **Approach** | Simplicity first |
+| **Use case** | Markdown writing, quick editing, blog posts |
 
 **Installation:**
 
-- **From AUR**: `yay -S marktext`
+```bash
+yay -S marktext
+```
 
-Note: The build can be a bit slow and picky with dependencies. If it fails, you might want to use a clean chroot or check the AUR comments for workarounds.
+**Note:** The package builds from source and can be a bit finicky. If the build stalls or fails, try these workarounds:
+- Check the [AUR page](https://aur.archlinux.org/packages/marktext) comments for recent issues
+- Build in a clean `makechrootpkg` environment if your system's npm is too new
+- Pre-built binaries are available in some user repositories as a fallback
